@@ -1,0 +1,6 @@
+[submodule "faiss"]
+	path = faiss
+	url = https://github.com/salemmohammed/faiss.git
+[submodule "hnswlib"]
+	path = hnswlib
+	url = https://github.com/salemmohammed/hnswlib.git
