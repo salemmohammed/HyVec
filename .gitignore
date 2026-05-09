@@ -26,3 +26,5 @@ __pycache__/
 .vscode/
 .idea/
 push.sh
+experiments/sift.tar.gz
+experiments/*.tar.gz
