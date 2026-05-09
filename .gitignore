@@ -1,0 +1,28 @@
+# Dataset (too large for GitHub)
+experiments/sift/
+
+# Generated numpy files
+experiments/*.npy
+
+# Build directories
+build/
+hnswlib/build/
+faiss/build/
+
+# Compiled binaries
+experiments/sift1m_search
+experiments/clustered_search
+experiments/clustered_index
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Mac files
+.DS_Store
+
+# IDE files
+.vscode/
+.idea/
+push.sh
