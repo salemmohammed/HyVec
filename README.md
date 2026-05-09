@@ -352,7 +352,9 @@ git push
 ---
 
 ## Authors
-- Salem Alqahtani
+- Salem Alqahtani, Adeel Aslam, Khaled Mahmoud, Badr Asiri, Osama Al-Senani, Faisal Azib, Abdullatif hadi, Faisal Awad, and Omar Abdulaziz
+
+
 
 ---
 
