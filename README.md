@@ -1,4 +1,4 @@
-# my-vector-search
+# Real-Time Hybrid Clustered Vector Search
 
 A research project on **Clustered Attributed Vector Search** using HNSW and FAISS.
 

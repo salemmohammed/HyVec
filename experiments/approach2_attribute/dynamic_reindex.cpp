@@ -121,11 +121,16 @@ public:
         {
             std::lock_guard<std::mutex> lock(active_mutex);
             int cluster = find_nearest_centroid(vec);
+            // NEW - resize if needed
             if (active_indexes.find(cluster) != active_indexes.end()) {
-                active_indexes[cluster]->addPoint(vec.data(), id);
+                auto* idx = active_indexes[cluster];
+                if (idx->getCurrentElementCount() >= idx->getMaxElements()) {
+                    idx->resizeIndex(idx->getMaxElements() * 2);
+                }
+                idx->addPoint(vec.data(), id);
             }
         }
-
+        
         // Trigger re-clustering if needed
         int count = ++insert_count;
         if (count % RECLUSTER_EVERY == 0) {
@@ -196,8 +201,11 @@ public:
             std::map<int, hnswlib::HierarchicalNSW<float>*> new_indexes;
             for (auto& [c, ids] : new_cluster_to_ids) {
                 if (ids.empty()) continue;
+                // Add 50% buffer for future insertions
+                int max_elements = std::max((int)ids.size() * 2, 100);
+                int max_els = std::max((int)ids.size() * 2, 100);
                 auto* idx = new hnswlib::HierarchicalNSW<float>(
-                    &space, ids.size(), M, EF_CONSTRUCTION);
+                    &space, max_els, M, EF_CONSTRUCTION);
                 for (int idx_pos : ids) {
                     idx->addPoint(vectors_copy[idx_pos].data(), ids_copy[idx_pos]);
                 }

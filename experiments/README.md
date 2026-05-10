@@ -1,42 +1,21 @@
 # Experiments
 
-This folder contains all experiments for the Clustered Attributed Vector Search project.
+Detailed guide for running all experiments in this project.
 
 ---
 
-## What We Are Solving
-
-Standard HNSW searches ALL vectors for every query. This is slow at scale.
-We partition vectors into clusters (attributes) and search only the relevant cluster.
-
-```
-Without clustering:  search 1,000,000 vectors per query
-With clustering:     search ~1,000 vectors per query (1000x smaller!)
-```
-
----
-
-## Folder Structure
+## Overview
 
 ```
 experiments/
-├── README.md                      ← this file
-├── sift/                          ← dataset (gitignored, download separately)
-│   ├── sift_base.fvecs            ← 1M database vectors
-│   ├── sift_query.fvecs           ← 10K query vectors
-│   ├── sift_groundtruth.ivecs     ← true nearest neighbors
-│   ├── sift_learn.fvecs           ← 100K training vectors
-│   ├── attr_labels.npy            ← generated: cluster ID per vector
-│   └── attr_centroids.npy         ← generated: cluster centroids
-│
 ├── baseline/
-│   └── sift1m_search.cpp          ← standard HNSW, no clustering
-│
+│   └── sift1m_search.cpp          ← Step 0: standard HNSW (no clustering)
 └── approach2_attribute/
     ├── generate_attributes.py     ← Step 1: cluster vectors into attributes
     ├── build_indexes.cpp          ← Step 2: build one HNSW index per cluster
-    ├── search.cpp                 ← Step 3: search using cluster attributes
-    └── dynamic_reindex.cpp        ← Step 4: real-time re-clustering thread
+    ├── search.cpp                 ← Step 3: sweep TOP_CLUSTERS values
+    ├── dynamic_reindex.cpp        ← Step 4: real-time re-clustering
+    └── run_all.sh                 ← run everything at once
 ```
 
 ---
@@ -50,23 +29,39 @@ pip3 install numpy scikit-learn
 
 ---
 
-## Download SIFT1M Dataset
+## Download SIFT1M
 
 ```bash
-cd experiments
-mkdir sift && cd sift
+cd experiments/sift
 wget ftp://ftp.irisa.fr/local/texmex/corpus/sift.tar.gz
 tar -xzf sift.tar.gz
-mv sift/* .
-rm -rf sift sift.tar.gz
-ls -lh   # should show 4 files, ~500MB total
+mv sift/* . && rm -rf sift sift.tar.gz
+```
+
+Files:
+```
+sift_base.fvecs        ← 1M database vectors (492MB)
+sift_query.fvecs       ← 10K query vectors
+sift_groundtruth.ivecs ← true nearest neighbors (answer key)
+sift_learn.fvecs       ← 100K training vectors
 ```
 
 ---
 
-## Step 0: Run the Baseline
+## Run Everything
 
-Standard HNSW with no clustering. This is our comparison point.
+```bash
+cd experiments/approach2_attribute
+./run_all.sh
+```
+
+Or run each step individually below.
+
+---
+
+## Step 0: Baseline (Standard HNSW)
+
+No clustering. Searches all 1M vectors. Reference point.
 
 ```bash
 cd experiments/baseline
@@ -74,225 +69,215 @@ g++ -O3 -std=c++17 sift1m_search.cpp -o sift1m_search -I../../hnswlib
 ./sift1m_search
 ```
 
-Expected output:
+Output:
 ```
-Base vectors:  1000000 x 128
-Query vectors: 10000
-Build time:    ~1013s
-Recall@1:      0.9686
-QPS:           ~7443
+Build time: 1013.82s
+Recall@1:   0.9686
+QPS:        7443
 ```
-
-This is the number to beat.
 
 ---
 
-## Step 1: Generate Attributes (K-Means K=1000)
+## Step 1: Generate Attributes
 
-Runs K-Means on 1M vectors. Each cluster = one attribute.
-K is automatically determined by the data distribution.
+Runs K-Means (K=1000) on 1M vectors.
+Each cluster = one attribute (ID 0-999).
 
 ```bash
 cd experiments/approach2_attribute
 python3 generate_attributes.py
 ```
 
-What it does:
+Output files:
 ```
-Input:  ../sift/sift_base.fvecs   (1M vectors)
-Process: MiniBatchKMeans K=1000
-Output: ../sift/attr_labels.npy   (1M integers, each 0-999)
-        ../sift/attr_centroids.npy (1000 × 128 centroid vectors)
+sift/attr_labels.npy     → 1M integers, cluster ID per vector
+sift/attr_centroids.npy  → 1000 × 128 centroid vectors
 ```
 
-Expected output:
+Results:
 ```
-Loaded: 1000000 vectors x 128 dimensions
-Running MiniBatchKMeans K=1000...
-=== ATTRIBUTE RESULTS ===
-Number of attributes (clusters): 1000
-Min cluster size: ~500
-Max cluster size: ~2000
-Avg cluster size: ~1000
+Clusters:         1000
+Min cluster size: 311
+Max cluster size: 3,602
+Avg cluster size: 1,000
+Clustering time:  12.43s
+```
+
+Config (in generate_attributes.py):
+```python
+K          = 1000   # number of clusters
+BATCH_SIZE = 10000  # K-Means batch size
 ```
 
 ---
 
 ## Step 2: Build Per-Cluster HNSW Indexes
 
-Builds one HNSW index per cluster. 1000 small indexes instead of 1 big one.
+Builds one HNSW index per cluster. 1000 small indexes.
 
 ```bash
-cd experiments/approach2_attribute
 g++ -O3 -std=c++17 build_indexes.cpp -o build_indexes -I../../hnswlib
 ./build_indexes
 ```
 
-What it does:
+Output files:
 ```
-Input:  ../sift/sift_base.fvecs
-        ../sift/attr_labels.npy
-Process: for each cluster c:
-           collect all vectors where label == c
-           build HierarchicalNSW index for those vectors
-Output: ../sift/indexes/index_0.bin
-        ../sift/indexes/index_1.bin
-        ...
-        ../sift/indexes/index_999.bin
+sift/indexes/index_0.bin
+sift/indexes/index_1.bin
+...
+sift/indexes/index_999.bin
 ```
 
-Expected output:
+Results:
 ```
-Building 1000 HNSW indexes...
-Built index 0: 1023 vectors
-Built index 1: 987 vectors
-...
-Total build time: ~Xs
+Total indexes: 1000
+Build time:    63.8s  ← 15× faster than baseline 1013s!
+```
+
+Config (in build_indexes.cpp):
+```cpp
+const int K               = 1000;
+const int M               = 16;
+const int EF_CONSTRUCTION = 200;
 ```
 
 ---
 
-## Step 3: Search Using Cluster Attributes
+## Step 3: Clustered Search Sweep
 
-For each query: find nearest centroid → search only that cluster's index.
+Tests different TOP_CLUSTERS values (1, 3, 5, 10, 20, 50).
+Loads all 1000 indexes once, then searches with each setting.
 
 ```bash
-cd experiments/approach2_attribute
 g++ -O3 -std=c++17 search.cpp -o search -I../../hnswlib
 ./search
 ```
 
-What it does:
+Results:
 ```
-Input:  ../sift/sift_query.fvecs       (10K queries)
-        ../sift/sift_groundtruth.ivecs  (answer key)
-        ../sift/attr_centroids.npy      (1000 centroids)
-        ../sift/indexes/               (1000 HNSW indexes)
-Process: for each query:
-           1. compute distance to all 1000 centroids
-           2. pick nearest centroid → cluster ID
-           3. search only index[cluster_ID]
-           4. return top K results
-Output: Recall@1, QPS, search time
+TOP_CLUSTERS   Recall@1    QPS         Time(s)
+---------------------------------------------------
+1              0.4359      9,959       1.004
+3              0.6977      5,286       1.892
+5              0.8062      3,587       2.788
+10             0.9117      1,994       5.014
+20             0.9689      1,052       9.505     ← matches baseline recall!
+50             0.9960      436         22.944
+---------------------------------------------------
+Baseline:      0.9686      7,443       1.340
 ```
 
-Expected output:
+Key insight:
 ```
-=== CLUSTERED SEARCH RESULTS ===
-Recall@1:    ~0.85-0.95  (lower than baseline due to cluster boundary effects)
-Search time: ~Xs
-QPS:         ~higher than baseline
+TOP_CLUSTERS=20 → Recall matches baseline (0.9689 vs 0.9686)
+TOP_CLUSTERS=1  → QPS 34% faster, but recall drops to 0.44
+Build time      → 15× faster regardless of TOP_CLUSTERS
 ```
 
 ---
 
 ## Step 4: Dynamic Re-clustering (Real-Time)
 
-Background thread re-clusters every N insertions. Atomic swap keeps search running.
+Demonstrates real-time insertion with background re-clustering.
+Search NEVER stops during re-clustering (atomic swap).
 
 ```bash
-cd experiments/approach2_attribute
 g++ -O3 -std=c++17 dynamic_reindex.cpp -o dynamic_reindex -I../../hnswlib -lpthread
 ./dynamic_reindex
 ```
 
-What it does:
+Results:
 ```
-Main thread:       insert new vectors + serve queries
-Background thread: every 10,000 insertions →
-                   re-run K-Means →
-                   rebuild indexes →
-                   atomic swap (search never stops)
+Insert rate:      5,295 vectors/second
+Re-cluster every: 10,000 insertions
+Re-cluster time:  1s → 5.7s (grows with data size)
+Search downtime:  0 (atomic swap)
 ```
 
-Expected output:
-```
-Inserting vectors...
-[Background] Re-clustering triggered at 10000 insertions
-[Background] New indexes ready, swapping...
-[Background] Swap complete. Search continues.
-Inserting vectors...
-[Background] Re-clustering triggered at 20000 insertions
-...
+Config (in dynamic_reindex.cpp):
+```cpp
+const int RECLUSTER_EVERY = 10000;  // re-cluster every N insertions
 ```
 
 ---
 
-## Results Comparison
+## Understanding the Results
 
-| Metric | Baseline | Clustered K=1000 | Improvement |
-|---|---|---|---|
-| Build time | 1013s | TBD | TBD |
-| Recall@1 | 0.9686 | TBD | TBD |
-| QPS | 7,443 | TBD | TBD |
-| Search space | 1,000,000 | ~1,000 | ~1000× |
+### Why Recall Drops With Small TOP_CLUSTERS
+```
+True nearest neighbor of query Q is in cluster 5
+Q's nearest centroid is cluster 3 (slightly off)
+→ We search cluster 3, miss cluster 5
+→ Miss the true answer → recall drops
+
+Fix: increase TOP_CLUSTERS to search more clusters
+```
+
+### Why Build Time Is 15× Faster
+```
+Baseline: build 1 index with 1,000,000 vectors
+Clustered: build 1000 indexes with ~1,000 vectors each
+
+HNSW build complexity: O(N × log(N))
+1 × O(1M × log(1M)) >> 1000 × O(1K × log(1K))
+```
+
+### Why QPS Drops With More TOP_CLUSTERS
+```
+Each cluster search has overhead:
+  - distance to 1000 centroids: O(1000 × 128)
+  - load index from memory
+  - HNSW graph traversal
+
+Searching 20 small indexes ≠ searching 1 big index efficiently
+The overhead of 20 index lookups adds up
+```
+
+### The Sweet Spot
+```
+TOP_CLUSTERS=20:
+  Recall = 0.9689 (matches baseline 0.9686) ✓
+  QPS    = 1,052  (lower than baseline 7,443) ✗
+
+The build time advantage (15×) is the main contribution
+Real-time insertion is the second contribution
+```
 
 ---
 
-## Tuning K (Number of Clusters)
+## Tuning Guide
 
-K is the most important parameter. Run search with different K values:
-
-```bash
-# Edit generate_attributes.py and change K
-K = 100   → avg 10,000 vectors/cluster → higher recall, lower QPS
-K = 500   → avg 2,000 vectors/cluster  → balanced
-K = 1000  → avg 1,000 vectors/cluster  → lower recall, higher QPS
-K = 5000  → avg 200 vectors/cluster    → very low recall, very high QPS
-```
-
-Plot recall vs QPS for each K to find the optimal tradeoff.
-
----
-
-## Key Research Insights
-
-### Why Recall May Drop
-```
-True nearest neighbor of query Q might be in cluster 5
-But Q's nearest centroid is cluster 3
-→ We search cluster 3 and miss the true answer
-→ This is the cluster boundary problem
-```
-
-### How to Improve Recall
-```
-Search top-2 or top-3 nearest centroids instead of just top-1
-→ higher recall at cost of some QPS
-```
-
-### Real-Time Insight
-```
-K-Means centroids are fixed after training
-New vectors may not fit existing centroids
-→ Background re-clustering fixes this
-→ Atomic swap ensures zero downtime
-```
+| Parameter | Location | Effect |
+|---|---|---|
+| K (clusters) | generate_attributes.py | more clusters = smaller indexes = faster build |
+| TOP_CLUSTERS | search.cpp | higher = better recall, lower QPS |
+| M | build_indexes.cpp | higher = better recall, slower build, more memory |
+| EF_CONSTRUCTION | build_indexes.cpp | higher = better recall, slower build |
+| EF_SEARCH | search.cpp | higher = better recall, lower QPS |
+| RECLUSTER_EVERY | dynamic_reindex.cpp | lower = fresher clusters, more CPU overhead |
 
 ---
 
 ## File Descriptions
 
 ### `baseline/sift1m_search.cpp`
-Standard HNSW search on all 1M vectors. No clustering.
-Reference point for all comparisons.
+Standard HNSW on all 1M vectors. No clustering. The reference point.
+Functions: `read_fvecs()`, `read_ivecs()`, `main()`.
 
 ### `approach2_attribute/generate_attributes.py`
-Runs MiniBatchKMeans on SIFT vectors.
-Saves cluster labels and centroids.
-K=1000 by default (configurable).
+Runs MiniBatchKMeans. Saves cluster labels and centroids.
+Functions: `read_fvecs()`, `main()`.
 
 ### `approach2_attribute/build_indexes.cpp`
-Reads cluster labels.
-Builds one HierarchicalNSW index per cluster.
-Saves each index to disk as a binary file.
+Reads labels. Builds one HierarchicalNSW per cluster. Saves to disk.
+Functions: `read_fvecs()`, `read_npy_labels()`, `main()`.
 
 ### `approach2_attribute/search.cpp`
-Loads all 1000 indexes and centroids.
-For each query: finds nearest centroid, searches that index.
-Reports Recall@1, QPS, and search time.
+Loads all indexes. Sweeps TOP_CLUSTERS={1,3,5,10,20,50}. Reports recall and QPS.
+Functions: `read_fvecs()`, `read_ivecs()`, `read_npy_centroids()`,
+`find_nearest_centroids()`, `main()`.
 
 ### `approach2_attribute/dynamic_reindex.cpp`
-Demonstrates real-time insertion with background re-clustering.
-Uses std::thread and std::mutex for atomic index swap.
-Shows zero-downtime index maintenance.
+Real-time insertion + background re-clustering with atomic swap.
+Classes: `DynamicClusteredIndex`.
+Methods: `insert()`, `search()`, `recluster_thread()`, `load_initial()`.
