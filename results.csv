@@ -1,0 +1,9 @@
+timestamp,machine,threads,method,recall,qps,build_time
+2026-05-11 17:47:39,Mac.lan,14,baseline,0.9686,7153.91,383.905
+2026-05-11 17:47:39,Mac.lan,14,ann_benchmarks,0.9500,28021,N/A
+2026-05-11 17:47:39,Mac.lan,14,clustered_top1,0.4359,9251.8,68.563
+2026-05-11 17:47:39,Mac.lan,14,clustered_top3,0.6977,5074.7,68.563
+2026-05-11 17:47:39,Mac.lan,14,clustered_top5,0.8062,3290.7,68.563
+2026-05-11 17:47:39,Mac.lan,14,clustered_top10,0.9117,1850.5,68.563
+2026-05-11 17:47:39,Mac.lan,14,clustered_top20,0.9689,971.3,68.563
+2026-05-11 17:47:39,Mac.lan,14,clustered_top50,0.9960,422.5,68.563

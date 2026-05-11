@@ -28,3 +28,6 @@ __pycache__/
 push.sh
 experiments/sift.tar.gz
 experiments/*.tar.gz
+benchmarks/data/sift/
+benchmarks/data/*.hdf5
+benchmarks/data/*.hdf5
