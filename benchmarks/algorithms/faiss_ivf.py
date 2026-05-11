@@ -84,7 +84,7 @@ def main():
         train, test, gt = load_hdf5(args.dataset)
     else:
         print("\nLoading SIFT1M from .fvecs...")
-        sift_dir = "../data/sift"
+        sift_dir = "../../experiments/sift"
         train, test, gt = load_fvecs(
             f"{sift_dir}/sift_base.fvecs",
             f"{sift_dir}/sift_query.fvecs",
