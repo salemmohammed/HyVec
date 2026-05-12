@@ -1,7 +1,8 @@
 # Real-Time Hybrid Clustered Vector Search
 
-> **Clustered Attributed Vector Search** — routing queries to spatial clusters via HNSW and FAISS to achieve faster approximate nearest neighbor search while maintaining high recall.
-
+> **Clustered Attributed Vector Search**
+Queries are routed toward relevant spatial clusters [11] using HNSW [1] and FAISS [2]
+to accelerate ANN search while maintaining high recall.
 ---
 
 ## Authors
@@ -13,11 +14,19 @@ Faisal Azib, Abdullatif Hadi, Faisal Awad, and Omar Abdulaziz
 
 ## Research Questions
 
-1. Can spatial clustering reduce vector search time while maintaining recall?
-2. What is the optimal number of clusters (K) for the best recall/QPS tradeoff?
-3. Can background re-clustering maintain index quality for real-time insertions?
+| # | Question | Theme |
+|---|---|---|
+| RQ1 | Can spatial clustering reduce vector search latency and increase QPS while maintaining recall@1 ≥ 0.95 on million-scale datasets compared to monolithic HNSW? | **Efficiency** |
+| RQ2 | What is the optimal number of clusters K that maximizes the recall/QPS tradeoff, and how does this sensitivity vary with dataset size and dimensionality? | **Tuning** |
+| RQ3 | As new vectors are continuously inserted into a live index, how does recall and QPS degrade over time without re-clustering, and what is the degradation rate relative to insertion volume? | **Real-Time Degradation** |
+| RQ4 | Can background re-clustering with atomic index swapping fully restore recall and QPS to pre-insertion levels with zero query interruption, and what is the measurable cost of re-clustering itself? | **Real-Time Recovery** |
+| RQ5 | Does the clustered approach scale sub-linearly with dataset growth compared to standard HNSW, and at what dataset size does clustering yield the greatest benefit? | **Scalability** |
+| RQ6 | Does attribute-based clustering provide a more interpretable and debuggable index structure than monolithic HNSW — enabling transparent query routing, per-cluster diagnostics, and predictable worst-case latency bounds? | **Understandability** |
+
+> **RQ1** → Does it work? · **RQ2** → How do you tune it? · **RQ3** → What breaks it? · **RQ4** → Can you fix it without stopping? · **RQ5** → Does it scale? · **RQ6** → Can you understand it?
 
 ---
+
 
 ## Core Idea
 
@@ -355,3 +364,7 @@ This project is positioned within a growing body of research on **filtered and p
 [9] M. Aumüller, E. Bernhardsson, and A. Faithfull, "ANN-Benchmarks: A Benchmarking Tool for Approximate Nearest Neighbor Algorithms," *Information Systems*, vol. 87, 2020. [ann-benchmarks.com](https://ann-benchmarks.com/)
 
 [10] A. Aslam et al., "Clustered Hybrid Search," GitHub Repository. [Link](https://github.com/AdeelAslamUnimore/Clustered_Hybrid_Search)
+
+[11] M. Ester, H.-P. Kriegel, J. Sander, and X. Xu,
+"A Density-Based Algorithm for Discovering Clusters in Large Spatial Databases with Noise,"
+KDD, 1996.
