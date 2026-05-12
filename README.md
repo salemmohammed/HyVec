@@ -1,9 +1,6 @@
 # Real-Time Hybrid Clustered Vector Search
 
-A research project on **Clustered Attributed Vector Search** using HNSW and FAISS.
-
-Vectors are partitioned into clusters where each cluster represents an attribute.
-Search is routed to the relevant cluster only — dramatically reducing search space.
+> **Clustered Attributed Vector Search** — routing queries to spatial clusters via HNSW and FAISS to achieve faster approximate nearest neighbor search while maintaining high recall.
 
 ---
 
@@ -24,20 +21,128 @@ Faisal Azib, Abdullatif Hadi, Faisal Awad, and Omar Abdulaziz
 
 ## Core Idea
 
+Standard HNSW searches across **all** 1,000,000 vectors for every query. This project partitions vectors into spatial clusters (attributes), then routes each query to only the relevant cluster — reducing the search space by up to **1000×**.
+
 ```
 Standard HNSW:
-Query → search ALL 1,000,000 vectors → slow
+  Query → search ALL 1,000,000 vectors → slow
 
 Clustered HNSW (this project):
-Query → find nearest cluster (attribute) → search ~1,000 vectors → faster!
+  Query → find nearest cluster → search ~1,000 vectors → faster!
+```
+
+---
+
+## System Architecture
+
+```mermaid
+flowchart TD
+    A([Raw Vectors\n1M × 128-dim]) --> B[K-Means Clustering\nK = 1000]
+    B --> C{Cluster Assignment\nAttribute ID 0–999}
+    C --> D1[Cluster 0\nHNSW Index]
+    C --> D2[Cluster 1\nHNSW Index]
+    C --> D3[· · ·]
+    C --> D4[Cluster 999\nHNSW Index]
+
+    E([Query Vector]) --> F[Find Nearest Centroid]
+    F --> G{Route to\nCluster ID}
+    G --> D1
+    G --> D2
+    G --> D4
+
+    D1 --> H([Top-K Results])
+    D2 --> H
+    D4 --> H
+
+    style A fill:#4C9BE8,color:#fff,stroke:#2563EB
+    style E fill:#4C9BE8,color:#fff,stroke:#2563EB
+    style H fill:#16A34A,color:#fff,stroke:#15803D
+    style B fill:#7C3AED,color:#fff,stroke:#6D28D9
+    style F fill:#7C3AED,color:#fff,stroke:#6D28D9
+    style C fill:#D97706,color:#fff,stroke:#B45309
+    style G fill:#D97706,color:#fff,stroke:#B45309
+```
+
+---
+
+## Standard HNSW vs Clustered HNSW
+
+```mermaid
+flowchart LR
+    subgraph Standard["🐢 Standard HNSW"]
+        direction TB
+        Q1([Query]) --> I1[Search 1,000,000 vectors]
+        I1 --> R1([Result])
+    end
+
+    subgraph Clustered["🚀 Clustered HNSW (This Work)"]
+        direction TB
+        Q2([Query]) --> C1[Find nearest centroid]
+        C1 --> C2[Search ~1,000 vectors\nin 1 cluster only]
+        C2 --> R2([Result])
+    end
+
+    Standard -- "1000× larger\nsearch space" --> Clustered
+
+    style Standard fill:#FEE2E2,stroke:#EF4444
+    style Clustered fill:#DCFCE7,stroke:#16A34A
+    style Q1 fill:#3B82F6,color:#fff
+    style Q2 fill:#3B82F6,color:#fff
+    style R1 fill:#16A34A,color:#fff
+    style R2 fill:#16A34A,color:#fff
+```
+
+---
+
+## Real-Time Insertion & Re-Clustering
+
+```mermaid
+flowchart TD
+    A([New Vector\nInserted]) --> B[Assign to Nearest Cluster]
+    B --> C{N insertions\nreached?}
+    C -- No --> D[Insert into\nexisting cluster index]
+    C -- Yes --> E[Background Thread\nRe-runs K-Means]
+    E --> F[Build New\nHNSW Indexes]
+    F --> G[Atomic Swap\nold ➜ new index]
+    G --> H([Search Continues\nUninterrupted])
+    D --> H
+
+    style A fill:#4C9BE8,color:#fff,stroke:#2563EB
+    style H fill:#16A34A,color:#fff,stroke:#15803D
+    style E fill:#7C3AED,color:#fff,stroke:#6D28D9
+    style F fill:#7C3AED,color:#fff,stroke:#6D28D9
+    style G fill:#D97706,color:#fff,stroke:#B45309
+    style C fill:#D97706,color:#fff,stroke:#B45309
+```
+
+---
+
+## Algorithm Pipeline
+
+```mermaid
+sequenceDiagram
+    participant D as Dataset (SIFT1M)
+    participant KM as K-Means (K=1000)
+    participant IDX as Cluster Indexes
+    participant Q as Query Engine
+
+    D->>KM: 1M × 128-dim vectors
+    KM->>KM: Assign cluster IDs (attributes)
+    KM->>IDX: Build 1 HNSW index per cluster
+    Note over IDX: 1000 indexes × ~1000 vectors each
+
+    Q->>KM: Query vector
+    KM->>Q: Nearest centroid → Attribute ID
+    Q->>IDX: Search only that cluster's index
+    IDX->>Q: Top-K approximate neighbors
+    Note over Q: 1000× smaller search space
 ```
 
 ---
 
 ## What Is a Vector / Embedding?
 
-An embedding converts complex data (images, text) into numbers so that
-similar things have similar numbers.
+An embedding converts complex data (images, text) into numbers so that similar things have similar numbers.
 
 ```
 Cat photo    → [0.2, 0.8, 0.1, 0.9, ...]   ← similar!
@@ -45,7 +150,7 @@ Another cat  → [0.2, 0.7, 0.1, 0.8, ...]   ← similar!
 Dog photo    → [0.9, 0.1, 0.7, 0.2, ...]   ← different
 ```
 
-This project uses SIFT descriptors — 128-dimensional vectors describing visual patches of images.
+This project uses **SIFT descriptors** — 128-dimensional vectors describing visual patches of images.
 
 ---
 
@@ -60,7 +165,6 @@ This project uses SIFT descriptors — 128-dimensional vectors describing visual
 | Distance metric | L2 (Euclidean) |
 | Size | ~500 MB |
 
-Download:
 ```bash
 cd experiments
 mkdir sift && cd sift
@@ -173,9 +277,9 @@ Step 4 (real-time):
 
 | Metric | Baseline | Clustered (K=1000) | Goal |
 |---|---|---|---|
-| Build time | 1013s | TBD | faster |
-| Recall@1 | 0.9686 | TBD | maintain |
-| QPS | 7,443 | TBD | higher |
+| Build time | 1013s | TBD | Faster |
+| Recall@1 | 0.9686 | TBD | Maintain ≥0.95 |
+| QPS | 7,443 | TBD | Higher |
 | Search space | 1,000,000 | ~1,000 | 1000× smaller |
 
 ---
@@ -202,10 +306,52 @@ cd ../..
 
 ---
 
+## Related Work
+
+This project is positioned within a growing body of research on **filtered and partitioned approximate nearest neighbor (ANN) search**:
+
+- **HNSW** — Malkov & Yashunin (2018) introduced the hierarchical navigable small world graph, which achieves near-logarithmic search behavior with strong recall at millisecond latencies. HNSW consistently ranks at the Pareto-optimal front on standard ANN benchmarks such as ANN-Benchmarks [[1]](#references).
+
+- **FAISS** — Johnson et al. (2017) introduced FAISS, which provides efficient IVF (inverted file) indexing by clustering vectors with K-Means and searching only the nearest cluster centroids at query time [[2]](#references). This is the foundational technique our approach extends.
+
+- **IVF Cluster Routing** — Traditional IVF methods partition vectors into clusters based on distance to centroids, then at query time identify the most promising clusters and perform exact search only within those posting lists [[3]](#references). Our approach applies this partitioning idea at a finer granularity, with per-cluster HNSW indexes instead of flat lists.
+
+- **ACORN** — Patel et al. (2024) proposed ACORN for predicate-agnostic filtered vector search, leveraging HNSW with denser vertex neighborhoods to maintain graph connectivity under attribute filters [[4]](#references).
+
+- **Compass** — Ye et al. (2025) introduced Compass, combining IVF-based cluster routing with a proximity graph, demonstrating that hybrid partition + graph indexing achieves competitive QPS and recall across selectivity levels [[5]](#references).
+
+- **Curator** — Engels et al. (2026) showed that partition-based approaches like per-label HNSW indexes can eliminate query-time filtering overhead but require careful tradeoffs between memory and search performance [[6]](#references).
+
+- **Filtered ANNS Survey** — Recent work on filtered approximate nearest neighbor search demonstrates that HNSW's performance degrades in low-selectivity scenarios, where partition-based methods may be preferable, and that hybrid indexing can be necessary for optimal performance across the full selectivity spectrum [[7]](#references).
+
+- **Insertion Order Effects** — Elliott & Clark (2024) showed that HNSW recall is significantly influenced by data insertion sequence and intrinsic dimensionality, with insertion order informed by known categories shifting recall by up to 12 percentage points [[8]](#references). This directly motivates our cluster-aware insertion strategy.
+
+- **ANN-Benchmarks** — Aumüller et al. (2018) established the standard benchmark for evaluating ANN indexes on datasets including SIFT1M, measuring recall@k, QPS, build time, and memory footprint [[9]](#references).
+
+- **Clustered Hybrid Search (Aslam et al.)** — A directly related project on clustered hybrid search that this work builds upon [[10]](#references).
+
+---
+
 ## References
 
-- [HNSW Paper](https://arxiv.org/abs/1603.09320) — Malkov & Yashunin, 2016
-- [FAISS Paper](https://arxiv.org/abs/1702.08734) — Johnson et al., 2017
-- [SIFT1M Dataset](http://corpus-texmex.irisa.fr/) — Jégou et al., 2011
-- [ANN Benchmarks](https://ann-benchmarks.com/)
-- [Clustered Hybrid Search](https://github.com/AdeelAslamUnimore/Clustered_Hybrid_Search) — Aslam et al.
+<a name="references"></a>
+
+[1] Y. A. Malkov and D. A. Yashunin, "Efficient and Robust Approximate Nearest Neighbor Search Using Hierarchical Navigable Small World Graphs," *IEEE Transactions on Pattern Analysis and Machine Intelligence*, vol. 42, no. 4, pp. 824–836, 2020. [arXiv:1603.09320](https://arxiv.org/abs/1603.09320)
+
+[2] J. Johnson, M. Douze, and H. Jégou, "Billion-Scale Similarity Search with GPUs," *IEEE Transactions on Big Data*, vol. 7, no. 3, pp. 535–547, 2021. [arXiv:1702.08734](https://arxiv.org/abs/1702.08734)
+
+[3] H. Jégou, M. Douze, and C. Schmid, "Product Quantization for Nearest Neighbor Search," *IEEE Transactions on Pattern Analysis and Machine Intelligence*, vol. 33, no. 1, pp. 117–128, 2011. *(SIFT1M dataset also introduced here.)* [Link](http://corpus-texmex.irisa.fr/)
+
+[4] L. Patel, P. Kraft, C. Guestrin, and M. Zaharia, "ACORN: Performant and Predicate-Agnostic Search Over Vector Embeddings and Structured Data," *Proc. ACM Management of Data*, 2024. [arXiv:2403.04871](https://arxiv.org/abs/2403.04871)
+
+[5] C. Ye et al., "Compass: General Filtered Search across Vector and Structured Data," *arXiv preprint*, 2025. [arXiv:2510.27141](https://arxiv.org/abs/2510.27141)
+
+[6] J. Engels, B. Landrum et al., "Curator: Efficient Vector Search with Low-Selectivity Filters," *arXiv preprint*, 2026. [arXiv:2601.01291](https://arxiv.org/abs/2601.01291)
+
+[7] (Anonymous), "Filtered Approximate Nearest Neighbor Search in Vector Databases," *arXiv preprint*, 2026. [arXiv:2602.11443](https://arxiv.org/abs/2602.11443)
+
+[8] O. P. Elliott and J. Clark, "The Impacts of Data, Ordering, and Intrinsic Dimensionality on Recall in Hierarchical Navigable Small Worlds," *arXiv preprint*, 2024. [arXiv:2405.17813](https://arxiv.org/abs/2405.17813)
+
+[9] M. Aumüller, E. Bernhardsson, and A. Faithfull, "ANN-Benchmarks: A Benchmarking Tool for Approximate Nearest Neighbor Algorithms," *Information Systems*, vol. 87, 2020. [ann-benchmarks.com](https://ann-benchmarks.com/)
+
+[10] A. Aslam et al., "Clustered Hybrid Search," GitHub Repository. [Link](https://github.com/AdeelAslamUnimore/Clustered_Hybrid_Search)
