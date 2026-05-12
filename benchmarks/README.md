@@ -244,3 +244,7 @@ python plot.py --dataset sift-128-euclidean
 
 5. J. Mohoney et al.: **Incremental IVF Index Maintenance for Streaming Vector
    Search (Ada-IVF).** arXiv: 2411.00970, 2024.
+
+## Figures
+
+See [figures.html](figures.html) for Table 1, Figure 4, Figure 5, and Figure 6 with full citations.
