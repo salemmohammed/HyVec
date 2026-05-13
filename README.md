@@ -18,8 +18,7 @@ Faisal Azib, Abdullatif Hadi, Faisal Awad, and Omar Abdulaziz
 | # | Question | Theme |
 |---|---|---|
 | RQ1 | Can representing each partition of a million-scale vector dataset by a centroid vector, and routing queries to the nearest partition, improve query throughput while preserving recall@1 ≥ 0.95 compared to searching the full unpartitioned dataset? | **Efficiency** |
-| RQ2a | When explicit attribute labels are absent or incomplete, as in SIFT1M, can K-Means-generated synthetic attributes effectively substitute for real attributes, and how does the proportion of unlabeled vectors affect recall@1 and QPS? | **Attribute Availability** |
-| RQ2b | When explicit attribute labels are absent or incomplete, as in SIFT1M, can K-Means-generated synthetic attributes effectively substitute for real attributes, and how does the proportion of unlabeled vectors affect recall@1 and QPS? | **Attribute Distribution** |
+| RQ2 | When a vector dataset has complete attributes, partial attributes, no attributes, imbalanced clusters, or spatially overlapping clusters, which partitioning strategy preserves the best recall@1 and QPS, and what are the tradeoffs? | **Partitioning Strategy Under Varying Attribute Conditions** |
 | RQ3 | As new vectors are continuously inserted into a live index, how does recall and QPS degrade over time without re-clustering, and what is the degradation rate relative to insertion volume? | **Real-Time Degradation** |
 | RQ4 | Can background re-clustering with atomic index swapping fully restore recall and QPS to pre-insertion levels with zero query interruption, and what is the measurable cost of re-clustering itself? | **Real-Time Recovery** |
 | RQ5 | Does the clustered approach scale sub-linearly with dataset growth compared to standard HNSW, and at what dataset size does clustering yield the greatest benefit? | **Scalability** |
