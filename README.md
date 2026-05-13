@@ -1,6 +1,6 @@
 # Real-Time Hybrid Clustered Vector Search
 
-> **Clustered Attributed Vector Search**
+**Clustered Attributed Vector Search**
 Queries are routed toward relevant spatial clusters [11] using HNSW [1] and FAISS [2]
 to accelerate ANN search while maintaining high recall.
 ---
