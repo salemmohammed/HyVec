@@ -90,20 +90,22 @@ flowchart TD
 
 ```mermaid
 flowchart LR
-    subgraph Standard["🐢 Standard HNSW"]
+    subgraph Standard["Standard HNSW"]
         direction TB
-        Q1([Query]) --> I1[Search 1,000,000 vectors]
-        I1 --> R1([Result])
+        Q1([Query]) --> I1[Traverse subset of 1M graph]
+        I1 --> I2[Search space grows with N]
+        I2 --> R1([Result])
     end
 
-    subgraph Clustered["🚀 Clustered HNSW (This Work)"]
+    subgraph Clustered["Clustered HNSW (This Work)"]
         direction TB
-        Q2([Query]) --> C1[Find nearest centroid]
-        C1 --> C2[Search ~1,000 vectors\nin 1 cluster only]
-        C2 --> R2([Result])
+        Q2([Query]) --> C1[Compare against K centroids]
+        C1 --> C2[Route to nearest cluster]
+        C2 --> C3[Search ~1,000 vectors only]
+        C3 --> R2([Result])
     end
 
-    Standard -- "1000× larger\nsearch space" --> Clustered
+    Standard -- "search space\ngrows with N" --> Clustered
 
     style Standard fill:#FEE2E2,stroke:#EF4444
     style Clustered fill:#DCFCE7,stroke:#16A34A
