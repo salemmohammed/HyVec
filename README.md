@@ -22,10 +22,7 @@ Faisal Azib, Abdullatif Hadi, Faisal Awad, and Omar Abdulaziz
 | RQ3 | As new vectors are continuously inserted into a live index, how does recall and QPS degrade over time without re-clustering, and what is the degradation rate relative to insertion volume? | **Real-Time Degradation** |
 | RQ4 | Can background re-clustering with atomic index swapping fully restore recall and QPS to pre-insertion levels with zero query interruption, and what is the measurable cost of re-clustering itself? | **Real-Time Recovery** |
 | RQ5 | Does the clustered approach scale sub-linearly with dataset growth compared to standard HNSW, and at what dataset size does clustering yield the greatest benefit? | **Scalability** |
-| RQ6 | Does attribute-based clustering provide a more interpretable and debuggable index structure than monolithic HNSW — enabling transparent query routing, per-cluster diagnostics, and predictable worst-case latency bounds? | **Understandability** |
-
-> **RQ1** → Does it work? · **RQ2** → How do you tune it? · **RQ3** → What breaks it? · **RQ4** → Can you fix it without stopping? · **RQ5** → Does it scale? · **RQ6** → Can you understand it?
-
+| RQ6 | Does attribute based clustering make vector search more understandable than monolithic HNSW by enabling three capabilities that standard HNSW cannot provide: (1) tracing exactly which cluster a query was routed to, (2) identifying which individual cluster is causing recall degradation, and (3) predicting worst-case query latency from cluster size alone without running the full system? | **Understandability** |
 ---
 
 
