@@ -28,14 +28,28 @@ Faisal Azib, Abdullatif Hadi, Faisal Awad, and Omar Abdulaziz
 
 ## Core Idea
 
-Standard HNSW searches across **all** 1,000,000 vectors for every query. This project partitions vectors into spatial clusters (attributes), then routes each query to only the relevant cluster — reducing the search space by up to **1000×**.
+Standard HNSW traverses a subset of the full graph on every query, but that graph contains all 1,000,000 vectors, and its search space grows as the dataset scales. This project partitions vectors into attribute-based clusters, so each query is routed to one small cluster only making the search space bounded and independent of total dataset size.
 
 ```
 Standard HNSW:
-  Query → search ALL 1,000,000 vectors → slow
+  Query --> traverses a small subset of the 1M graph
+        --> controlled by ef_search parameter
+        --> visits O(ef × log N) nodes approximately
+        --> search space grows with dataset size N
 
 Clustered HNSW (this project):
-  Query → find nearest cluster → search ~1,000 vectors → faster!
+
+  Offline (build time):
+    1,000,000 vectors  --> partitioned into K clusters
+    Each cluster       --> represented by 1 centroid vector
+    Each cluster       --> gets its own small HNSW index (~1,000 vectors)
+
+  Online (query time):
+    Query --> compared against K centroids only
+          --> routed to nearest cluster
+          --> HNSW runs on that cluster only (~1,000 vectors)
+          --> search space bounded by cluster size
+          --> independent of total dataset size N
 ```
 
 ---
