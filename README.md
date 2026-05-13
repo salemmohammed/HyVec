@@ -16,7 +16,7 @@ Faisal Azib, Abdullatif Hadi, Faisal Awad, and Omar Abdulaziz
 
 | # | Question | Theme |
 |---|---|---|
-| RQ1 | Can spatial clustering reduce vector search latency and increase QPS while maintaining recall@1 ≥ 0.95 on million-scale datasets compared to monolithic HNSW? | **Efficiency** |
+| RQ1 | Can partitioning a million-scale vector index into attribute-based clusters improve query throughput while preserving recall@1 ≥ 0.95, relative to an unpartitioned HNSW index? | **Efficiency** |
 | RQ2 | What is the optimal number of clusters K that maximizes the recall/QPS tradeoff, and how does this sensitivity vary with dataset size and dimensionality? | **Tuning** |
 | RQ3 | As new vectors are continuously inserted into a live index, how does recall and QPS degrade over time without re-clustering, and what is the degradation rate relative to insertion volume? | **Real-Time Degradation** |
 | RQ4 | Can background re-clustering with atomic index swapping fully restore recall and QPS to pre-insertion levels with zero query interruption, and what is the measurable cost of re-clustering itself? | **Real-Time Recovery** |
