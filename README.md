@@ -93,8 +93,7 @@ flowchart LR
     subgraph Standard["Standard HNSW"]
         direction TB
         Q1([Query]) --> I1[Traverse subset of 1M graph]
-        I1 --> I2[Search space grows with N]
-        I2 --> R1([Result])
+        I1 --> R1([Result])
     end
 
     subgraph Clustered["Clustered HNSW (This Work)"]
@@ -105,8 +104,6 @@ flowchart LR
         C3 --> R2([Result])
     end
 
-    Standard -- "search space\ngrows with N" --> Clustered
-
     style Standard fill:#FEE2E2,stroke:#EF4444
     style Clustered fill:#DCFCE7,stroke:#16A34A
     style Q1 fill:#3B82F6,color:#fff
@@ -114,7 +111,6 @@ flowchart LR
     style R1 fill:#16A34A,color:#fff
     style R2 fill:#16A34A,color:#fff
 ```
-
 ---
 
 ## Real-Time Insertion & Re-Clustering
