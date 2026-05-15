@@ -31,7 +31,7 @@ for the top-100 nearest neighbors. Source: ann-benchmarks.com
 
 | Dataset | Dimensions | Train size | Test size | Distance | Size | Our Use |
 |---|---|---|---|---|---|---|
-| [SIFT](http://corpus-texmex.irisa.fr/) | 128 | 1,000,000 | 10,000 | Euclidean | 501MB | ✅ Primary |
+| [SIFT](http://corpus-texmex.irisa.fr/) | 128 | 1,000,000 | 10,000 | Euclidean | 501MB | Primary |
 | [GIST](http://corpus-texmex.irisa.fr/) | 960 | 1,000,000 | 1,000 | Euclidean | 3.6GB | Future |
 | [GloVe-25](http://nlp.stanford.edu/projects/glove/) | 25 | 1,183,514 | 10,000 | Angular | 121MB | Future |
 | [GloVe-100](http://nlp.stanford.edu/projects/glove/) | 100 | 1,183,514 | 10,000 | Angular | 463MB | Future |
