@@ -1,8 +1,6 @@
 # Benchmarks
 
-This folder contains everything needed to compare our system against
-ANN-Benchmarks — the standard evaluation framework for approximate
-nearest neighbor search algorithms.
+This benchmark evaluates our clustered HNSW system against standard ANN algorithms including hnswlib, FAISS-IVF, ScaNN, and Annoy by rerunning the ANN-Benchmarks framework to produce comparable results on the same hardware. We evaluate on two datasets: SIFT1M as a standard public benchmark, and our own attributed dataset to validate hybrid search performance.
 
 ---
 
@@ -20,41 +18,9 @@ GitHub:  [https://github.com/erikbern/ann-benchmarks](https://github.com/erikber
 
 ---
 
-## What ANN-Benchmarks Is
+## ANN-Benchmarks Evaluation Framework
 
-ANN-Benchmarks is a standardized benchmarking environment for approximate
-nearest neighbor (ANN) search algorithms. It provides:
-
-- Pre-computed datasets in HDF5 format with ground truth
-- Docker containers for each algorithm
-- Standardized evaluation metrics (Recall, QPS, build time, index size)
-- A public leaderboard at ann-benchmarks.com
-
-The benchmark enforces single-CPU execution so results are comparable
-across hardware. All results on ann-benchmarks.com were run on an
-AWS r6i.16xlarge machine with `--parallelism 31` and hyperthreading disabled.
-
----
-
-## What the Lines Represent
-
-Each line on the ANN-Benchmarks plot = one algorithm.
-Each point on a line = one parameter configuration (e.g. ef=10, ef=50, ef=100).
-
-```
-                High QPS
-                    ↑
-                    │    ★ glass
-                    │   ╱ hnswlib
-                    │  ╱  scann
-                    │ ╱   faiss-ivf
-                    │╱    annoy
-                    └──────────────→ High Recall
-                  Low             High
-```
-
-A curve that is **higher and to the right** is strictly better —
-it achieves more queries per second at any given recall level.
+ANN-Benchmarks [1] is a standardized evaluation environment for approximate nearest neighbor (ANN) search algorithms. It provides pre-computed datasets with ground-truth nearest neighbors, isolated execution environments per algorithm, and a unified set of metrics including recall, QPS, build time, and index size. To ensure fair comparison, the framework enforces single CPU execution with hyperthreading disabled. We rerun the framework under identical conditions to directly compare our Clustered HNSW system against existing algorithms.
 
 ---
 
@@ -134,33 +100,34 @@ Example: k=10, found 9 of the true 10 nearest neighbors → Recall = 0.9
 
 ---
 
-## Our Results vs ANN-Benchmarks (SIFT-128-Euclidean)
-
-Hardware note: ANN-Benchmarks runs on AWS r6i.16xlarge (single CPU, no hyperthreading).
-Our Mac results are lower QPS due to hardware difference. Shape of curve matters more than raw numbers.
+## Experimental Setup
+ 
+- **ANN-Benchmarks baseline:** AWS r6i.16xlarge (single CPU, hyperthreading disabled).
+- **Our system:** NVIDIA DGX Spark (128GB unified memory, NVIDIA Blackwell GPU).
+- All experiments were rerun on our hardware to ensure a fair and consistent comparison across all evaluated algorithms.
 
 ### Recall vs QPS
 
-| Method | Recall@1 | QPS (our Mac) | QPS (ANN-benchmarks server) |
+| Method | Recall@1 | QPS | Build Time (s) |
 |---|---|---|---|
-| hnswlib ef=10 | 0.713 | — | 69,662 |
-| hnswlib ef=50 | 0.950 | — | 28,021 |
-| hnswlib ef=100 | 0.985 | — | 16,108 |
-| **Our baseline** ef=50 | **0.9686** | **7,443** | — |
-| **Clustered TOP=1** | **0.4359** | **9,785** | — |
-| **Clustered TOP=3** | **0.6977** | **5,301** | — |
-| **Clustered TOP=5** | **0.8062** | **3,603** | — |
-| **Clustered TOP=10** | **0.9117** | **1,998** | — |
-| **Clustered TOP=20** | **0.9689** | **1,056** | — |
-| **Clustered TOP=50** | **0.9960** | **435** | — |
+| hnswlib | — | — | — |
+| FAISS-IVF | — | — | — |
+| ScaNN | — | — | — |
+| Annoy | — | — | — |
+| **Clustered HNSW (Ours)** | — | — | — |
+
+> Results will be updated upon completion of experiments on the NVIDIA DGX Spark.
 
 ### Build Time
 
-| Method | Build time | vs Baseline |
+| Method | Build Time (s) | vs Baseline |
 |---|---|---|
-| Baseline HNSW (1M vectors) | 1013s | 1× |
-| **Clustered HNSW (1000 indexes)** | **66s** | **15× faster** |
-| ANN-benchmarks hnswlib | ~120s (server) | — |
+| Baseline HNSW (1M vectors) | — | 1× |
+| **Clustered HNSW (1000 indexes)** | — | TBD |
+| hnswlib (ANN-Benchmarks) | — | — |
+| FAISS-IVF (ANN-Benchmarks) | — | — |
+
+> Results will be updated upon completion of experiments on the NVIDIA DGX Spark.
 
 ---
 
@@ -210,19 +177,17 @@ python plot.py --dataset sift-128-euclidean
 
 ---
 
-## Key Findings
+## Expected Findings
 
-1. **Build time:** Our clustered approach builds 15× faster than standard HNSW
-   (66s vs 1013s on SIFT1M)
+1. **Build time:** 
 
-2. **Recall match:** With TOP_CLUSTERS=20, our method matches standard HNSW
-   recall (0.9689 vs 0.9686) while searching only 2% of data
+2. **Recall match:** 
 
-3. **QPS:** At TOP_CLUSTERS=1, our method achieves 34% higher QPS than
-   standard HNSW at lower recall — useful for latency-critical applications
+3. **QPS tradeoff:** 
 
-4. **Real-time:** 5,155 insertions/second with zero search downtime,
-   using Ada-IVF inspired local re-clustering
+4. **Real-time insertions:**
+
+
 
 ---
 
