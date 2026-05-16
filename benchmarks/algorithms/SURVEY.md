@@ -2,39 +2,44 @@
 
 This folder contains implementations of the approximate nearest neighbor (ANN)
 algorithms evaluated in our benchmarks. We follow the taxonomy and evaluation
-methodology established by Wang et al. [1] — the most comprehensive survey of
-graph-based ANNS algorithms to date — and extend it with our Clustered HNSW system.
+methodology established by Wang et al. [1] the most comprehensive survey of
+graph-based ANNS algorithms to date and extend it with our Clustered HNSW system.
 
 ---
 
 ## Background: What is ANNS?
 
-Given a dataset S of n vectors in Euclidean space E^d and a query vector q,
-**Nearest Neighbor Search (NNS)** finds the exact k closest vectors to q by
-evaluating all pairwise distances. Formally:
+### The Problem
 
-```
-R = argmin   Σ δ(x, q)
-    R ⊂ S,   x ∈ R
-    |R| = k
-```
+Imagine you have 1M images stored as vectors. Each image represented as a list of 128 numbers that describe its visual content. Given a new query image, you want to find the most similar images in your collection. The naive approach is to compare the query against every single vector is called **exact nearest neighbor search**. It always finds the correct answer, but at 1M comparisons per query, it becomes too slow for real-time applications.
 
-As |S| grows to millions or billions, exact NNS becomes computationally
-infeasible. **Approximate Nearest Neighbor Search (ANNS)** relaxes the
-accuracy guarantee in exchange for dramatically faster query times:
+### The Solution: Approximate Search
+
+**Approximate Nearest Neighbor Search (ANNS)** accepts a small loss in accuracy in exchange for dramatically faster query times. Instead of searching all N vectors, it builds an index that guides the search toward a small candidate set and visiting only a few thousand vectors instead of millions. The accuracy of an ANNS algorithm is measured by **Recall@k** the fraction of the true k nearest neighbors that were actually returned:
 
 ```
 Recall@k = |R ∩ R̃| / k
 
-where R  = exact k nearest neighbors (ground truth)
-      R̃  = approximate k nearest neighbors (returned by ANNS)
+  R  = the exact k nearest neighbors (ground truth, from brute force)
+  R̃  = the approximate k nearest neighbors returned by ANNS
+
+  Distance: δ(x, q) = √ Σ (xᵢ - qᵢ)²    ← Euclidean (L2) distance
+
+Example: k = 10, ANNS returns 9 of the true 10 → Recall@10 = 0.9
 ```
 
-ANNS algorithms build an index I on S, then retrieve a small candidate
-set C at query time. The goal is to maximize Recall@k while keeping
-|C| as small as possible.
+A Recall@k of 1.0 means perfect accuracy. A value of 0.95 means 95% of the true nearest neighbors were found which is acceptable for most applications.
 
----
+### The Core Tradeoff
+
+Every ANNS algorithm navigates the same fundamental tradeoff:
+
+```
+Search fewer vectors → faster QPS,  lower Recall
+Search more vectors  → slower QPS,  higher Recall
+```
+
+The goal is to find an index structure that sits as high and as far right as possible on the Recall vs QPS curve achieving high accuracy without sacrificing speed.
 
 ## Algorithm Taxonomy
 
@@ -49,17 +54,13 @@ ANNS Algorithms
 └── Graph-based         → NSW, HNSW, NSG, DiskANN  ← state of the art
 ```
 
-Graph-based algorithms have emerged as the dominant paradigm because they
-evaluate fewer candidate points while achieving higher recall than other
-families [1]. Our system is a **hybrid** — it combines graph-based search
-(HNSW) with partition-based routing (IVF-style clustering).
+Graph-based algorithms have emerged as the dominant paradigm because they evaluate fewer candidate points while achieving higher recall than other families [1]. Our system is a **hybrid** that combines graph-based search (HNSW) with partition-based routing (IVF-style clustering) — routing each query to a small attribute-based cluster, then applying HNSW search within that cluster only.
 
 ---
 
 ## Graph-Based ANNS: Four Base Graphs
 
-Wang et al. [1] identify four foundational graph structures from which all
-graph-based ANNS algorithms are derived:
+Wang et al. [1] identify four foundational graph structures from which all graph-based ANNS algorithms are derived:
 
 | Base Graph | Key Property | Used By |
 |---|---|---|
@@ -68,9 +69,7 @@ graph-based ANNS algorithms are derived:
 | **K-Nearest Neighbor Graph (KNNG)** | Limits neighbors to K; efficient but may lose global connectivity | EFANNA, IEH |
 | **Minimum Spanning Tree (MST)** | Fewest edges for global connectivity; may detour during search | HCNNG |
 
-HNSW is an **RNG-based** algorithm — it approximates the RNG by diversifying
-neighbor distribution across hierarchical layers, achieving logarithmic search
-complexity.
+HNSW is an **RNG-based** algorithm — it approximates the RNG by diversifying neighbor distribution across hierarchical layers. This omnidirectional neighbor distribution is what enables greedy graph traversal to reliably converge toward the nearest neighbor, achieving logarithmic search complexity O(log N) — the best among all 13 graph-based algorithms surveyed by Wang et al. [1].
 
 ---
 
@@ -81,52 +80,35 @@ complexity.
 ### 1. Brute Force — Exact Search (Reference Baseline)
 
 **Core idea:**
-Compare the query vector against every vector in the dataset. No index is
-built. Returns exact nearest neighbors by definition.
+Compare the query vector against every vector in the dataset. No index is built. Returns exact nearest neighbors by definition.
 
 **Formal complexity:**
 ```
 Query time:  O(N × d)   — linear scan over N vectors of dimension d
-Build time:  O(1)        — no index construction
-Memory:      O(N × d)    — store the full dataset
-Recall@k:    1.0          — always exact
+Build time:  O(1)       — no index construction
+Memory:      O(N × d)   — store the full dataset
+Recall@k:    1.0        — always exact
 ```
 
 **Role in our evaluation:**
-Brute force defines the upper bound of recall (1.0) and the lower bound of
-QPS. Every ANNS algorithm is measured against it. We use FAISS
-IndexFlatL2 as our implementation.
+Brute force defines the upper bound of recall (1.0) and the lower bound of QPS. Every ANNS algorithm is measured against it. We use FAISS IndexFlatL2 as our implementation.
 
 **When to use:**
-Only practical for small datasets (N < 100K) or when exact results are
-required regardless of cost.
+Only practical for small datasets (N < 100K) or when exact results are required regardless of cost.
 
 **Reference:**
-- Johnson, Douze & Jégou, "Billion-Scale Similarity Search with GPUs,"
-  IEEE Big Data, 2021. [arXiv:1702.08734](https://arxiv.org/abs/1702.08734)
+- Johnson, Douze & Jégou, "Billion-Scale Similarity Search with GPUs," IEEE Big Data, 2021. [arXiv:1702.08734](https://arxiv.org/abs/1702.08734)
 
 ---
 
 ### 2. HNSW — Hierarchical Navigable Small World (Baseline)
 
 **Core idea:**
-HNSW [2] constructs a hierarchical multi-layer proximity graph. Upper layers
-contain long-range edges connecting randomly selected nodes for fast
-navigation. Lower layers contain short-range edges for precise local search.
-At query time, the algorithm enters at the top layer and greedily descends,
+HNSW [2] constructs a hierarchical multi-layer proximity graph. Upper layers contain long-range edges connecting randomly selected nodes for fast navigation. Lower layers contain short range edges for precise local search. At query time, the algorithm enters at the top layer and greedily descends,
 narrowing the candidate set at each layer until a termination condition is met.
 
-**Graph structure:**
-```
-Layer 2 (sparse):   o ————————————— o         ← long-range navigation
-Layer 1 (medium):   o —— o —— o —— o —— o
-Layer 0 (dense):    o-o-o-o-o-o-o-o-o-o-o     ← precise local search
-```
-
 **Why it outperforms NSW:**
-NSW has poly-logarithmic search complexity. HNSW fixes the upper bound of
-each vertex's neighbor count per layer, reducing search complexity to
-logarithmic O(log N) [1, 2].
+NSW has poly-logarithmic search complexity. HNSW fixes the upper bound of each vertex's neighbor count per layer, reducing search complexity to logarithmic O(log N) [1, 2].
 
 **Key parameters:**
 | Parameter | Role | Our Setting |
@@ -142,20 +124,8 @@ Build time:  O(N × log N)
 Memory:      O(N × M)
 ```
 
-**Our baseline results on SIFT1M:**
-```
-Recall@1 = 0.9686,  QPS = 7,443,  Build time = 1013s
-```
-
 **Limitation for our work:**
-Standard HNSW has no concept of attributes. It treats all 1M vectors as a
-single undifferentiated graph. Query routing is determined entirely by graph
-structure — making the index opaque and uninterpretable.
-
-**References:**
-- [2] Malkov & Yashunin, IEEE TPAMI, 2020. [arXiv:1603.09320](https://arxiv.org/abs/1603.09320)
-- [1] Wang et al., VLDB 2021. [Link](https://www.vldb.org/pvldb/vol14/p1964-wang.pdf)
-- [hnswlib GitHub](https://github.com/nmslib/hnswlib)
+Standard HNSW has no concept of attributes. It treats all 1M vectors as a single undifferentiated graph. Query routing is determined entirely by graph structure which is making the index opaque and uninterpretable.
 
 ---
 
@@ -175,16 +145,16 @@ cluster's HNSW index.
 
   1M vectors → K-Means (K clusters)
                   │
-                  ├── Cluster 0   → centroid_0  +  HNSW_0  (~N/K vectors)
-                  ├── Cluster 1   → centroid_1  +  HNSW_1  (~N/K vectors)
+                  ├── Cluster 0   → centroid_0    +  HNSW_0    (~N/K vectors)
+                  ├── Cluster 1   → centroid_1    +  HNSW_1    (~N/K vectors)
                   ├── ...
-                  └── Cluster K-1 → centroid_K  +  HNSW_K  (~N/K vectors)
+                  └── Cluster K-1 → centroid_K-1  +  HNSW_K-1  (~N/K vectors)
 
 ─── Online Phase (Query) ───────────────────────────────────────
 
-  Query → compare against K centroids        [O(K × d)]
-        → route to nearest cluster            [O(1)]
-        → search that cluster's HNSW index   [O(log(N/K))]
+  Query → compare against K centroids (flat scan)  [O(K × d)]
+        → route to nearest cluster                  [O(1)]
+        → search that cluster's HNSW index          [O(log(N/K))]
         → return Top-K results
 ```
 
@@ -213,11 +183,6 @@ interruption during re-indexing.
 | Query routing | Opaque graph traversal | Traceable — cluster ID logged per query |
 | Failure diagnosis | Global recall only | Per-cluster recall measurable |
 | Worst-case latency | Unpredictable | Bounded by largest cluster size |
-
-**References:**
-- [2] Malkov & Yashunin, 2020. [arXiv:1603.09320](https://arxiv.org/abs/1603.09320)
-- [3] Johnson et al., 2021. [arXiv:1702.08734](https://arxiv.org/abs/1702.08734)
-- Aslam et al., Clustered Hybrid Search. [GitHub](https://github.com/AdeelAslamUnimore/Clustered_Hybrid_Search)
 
 ---
 
@@ -252,11 +217,6 @@ Query time:  O(K × d) + O(nprobe × N/K)
 Build time:  O(N × K)
 Memory:      O(N × d)
 ```
-
-**Reference:**
-- [3] Johnson, Douze & Jégou, IEEE Big Data, 2021. [arXiv:1702.08734](https://arxiv.org/abs/1702.08734)
-- [FAISS GitHub](https://github.com/facebookresearch/faiss)
-
 ---
 
 ### 5. ScaNN — Scalable Nearest Neighbors (Google)
@@ -272,10 +232,6 @@ minimizing average reconstruction error as standard PQ does.
 **Why it matters:**
 ScaNN consistently achieves the highest QPS at high recall on ANN-Benchmarks,
 making it the toughest performance competitor for any new ANN system.
-
-**Reference:**
-- [4] Guo et al., ICML 2020. [arXiv:1908.10396](https://arxiv.org/abs/1908.10396)
-- [ScaNN GitHub](https://github.com/google-research/google-research/tree/master/scann)
 
 ---
 
@@ -298,9 +254,6 @@ sets are merged and ranked by distance.
 Annoy does not support incremental insertions — the entire forest must be
 rebuilt when new vectors are added. This is a fundamental limitation that
 our background re-clustering directly addresses.
-
-**Reference:**
-- [5] Bernhardsson, Annoy. [GitHub](https://github.com/spotify/annoy)
 
 ---
 
