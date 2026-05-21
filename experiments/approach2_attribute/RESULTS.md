@@ -1,123 +1,123 @@
 # Results: Real-Time Hybrid Clustered Vector Search
-# Dataset: SIFT1M (1M vectors, 128 dimensions)
-# Machine: MacBook (single thread)
-# Date: May 2026
 
-================================================
-  STEP 1: CLUSTERING (K=1000)
-================================================
-Algorithm:        MiniBatchKMeans
-Clusters:         1000
-Min cluster size: 311
-Max cluster size: 3,602
-Avg cluster size: 1,000
-Std cluster size: 326
-Clustering time:  13.66s
+**Dataset:** SIFT1M — 1,000,000 vectors × 128 dimensions  
+**Date:** May 2026
 
-================================================
-  STEP 2: BUILD TIME COMPARISON
-================================================
+---
 
-Index              Vectors    Build Time    Speedup
----------------------------------------------------
-Baseline HNSW      1,000,000  1013.82s      1x
-Clustered HNSW     1,000,000    66.18s     15x faster!
+## 1. Clustering
 
-Key insight: Building 1000 small HNSW indexes
-             is 15x faster than 1 large index.
+| Metric           | Value           |
+|------------------|-----------------|
+| Algorithm        | MiniBatchKMeans |
+| K                | 1,000           |
+| Min cluster size | 311             |
+| Max cluster size | 3,602           |
+| Avg cluster size | 1,000           |
+| Std cluster size | 326             |
+| Clustering time  | 13.66s          |
 
-================================================
-  STEP 3: SEARCH — TOP_CLUSTERS SWEEP
-================================================
+---
 
-TOP_CLUSTERS   Recall@1    QPS       Time(s)   Search Space
-------------------------------------------------------------
-1              0.4359      9,785     1.022     ~1,000
-3              0.6977      5,301     1.887     ~3,000
-5              0.8062      3,603     2.775     ~5,000
-10             0.9117      1,998     5.004     ~10,000
-20             0.9689      1,056     9.471     ~20,000
-50             0.9960        435    22.983     ~50,000
-------------------------------------------------------------
-Baseline       0.9686      7,443     1.340     1,000,000
+## 2. Build Time
 
-Key findings:
-  - TOP_CLUSTERS=1  → QPS 34% FASTER than baseline, Recall drops to 0.44
-  - TOP_CLUSTERS=20 → Recall MATCHES baseline (0.9689 vs 0.9686)
-  - TOP_CLUSTERS=50 → Recall EXCEEDS baseline (0.9960 vs 0.9686)
-  - Build time      → 15x FASTER regardless of TOP_CLUSTERS
+| Index          | Vectors   | Build Time | Speedup    |
+|----------------|-----------|------------|------------|
+| Baseline HNSW  | 1,000,000 | 1,013.82s  | 1×         |
+| Clustered HNSW | 1,000,000 | 66.18s     | **15× faster** |
 
-================================================
-  STEP 4: DYNAMIC RE-CLUSTERING (REAL-TIME)
-================================================
+> Building 1,000 small HNSW indexes is **15× faster** than one large index.
 
-Strategy: Local reindex — only violated clusters
-          (inspired by Ada-IVF, Mohoney et al. 2024)
+---
 
-Insertions   Search OK   Reindex Events   Clusters Rebuilt
-----------------------------------------------------------
-10,000       YES         47               498
-20,000       YES         49               620
-30,000       YES         50               726
-40,000       YES         50               743
-50,000       YES         51               813
-----------------------------------------------------------
+## 3. Search — TOP_CLUSTERS Sweep
 
-Final Results:
-  Total insertions:    50,000
-  Total time:          9.70s
-  Insert rate:         5,155 vectors/s
-  Reindex events:      51
-  Clusters rebuilt:    813 / 1000
-  Search downtime:     0s  (atomic swap per cluster)
+| TOP_CLUSTERS | Recall@1 | QPS       | Time (s) | Search Space |
+|:------------:|:--------:|:---------:|:--------:|:------------:|
+| 1            | 0.4359   | 9,785     | 1.022    | ~1,000       |
+| 3            | 0.6977   | 5,301     | 1.887    | ~3,000       |
+| 5            | 0.8062   | 3,603     | 2.775    | ~5,000       |
+| 10           | 0.9117   | 1,998     | 5.004    | ~10,000      |
+| 20           | 0.9689   | 1,056     | 9.471    | ~20,000      |
+| 50           | 0.9960   | 435       | 22.983   | ~50,000      |
+| **Baseline** | **0.9686** | **7,443** | **1.340** | **1,000,000** |
 
-Key insight: Only violated clusters are rebuilt.
-             Search NEVER stops during reindexing.
+**Key findings:**
 
-================================================
-  FULL COMPARISON TABLE
-================================================
+| Setting         | Recall@1 | QPS   | vs Baseline |
+|-----------------|----------|-------|-------------|
+| TOP_CLUSTERS=1  | 0.4359   | 9,785 | +34% QPS, recall too low |
+| TOP_CLUSTERS=20 | 0.9689   | 1,056 | Recall matches baseline |
+| TOP_CLUSTERS=50 | 0.9960   | 435   | Recall exceeds baseline |
 
-Metric              Baseline    Clustered   Winner
-----------------------------------------------------
-Build time          1013s       66s         Clustered (15x)
-Recall@1 (TOP=1)    0.9686      0.4359      Baseline
-Recall@1 (TOP=20)   0.9686      0.9689      TIE
-Recall@1 (TOP=50)   0.9686      0.9960      Clustered
-QPS (TOP=1)         7,443       9,785       Clustered (+34%)
-QPS (TOP=20)        7,443       1,056       Baseline
-Insert rate         N/A         5,155/s     Clustered
-Search downtime     N/A         0s          Clustered
+---
 
-================================================
-  RESEARCH CONTRIBUTIONS
-================================================
+## 4. Dynamic Re-clustering (Real-Time)
 
-1. BUILD TIME: 15x faster index construction
-   (64s vs 1013s on SIFT1M)
+> Only violated clusters are rebuilt. Search never stops (atomic swap).  
+> Inspired by Ada-IVF (Mohoney et al., 2024).
 
-2. RECALL MATCH: TOP_CLUSTERS=20 matches baseline recall
-   (0.9689 vs 0.9686) while searching only 2% of data
+### Insertion Progress
 
-3. SPEED WIN: TOP_CLUSTERS=1 gives 34% faster QPS
-   at cost of lower recall — useful for latency-critical apps
+| Insertions | Search OK | Reindex Events | Clusters Rebuilt |
+|:----------:|:---------:|:--------------:|:----------------:|
+| 10,000     | ✓         | 47             | 498              |
+| 20,000     | ✓         | 49             | 620              |
+| 30,000     | ✓         | 50             | 726              |
+| 40,000     | ✓         | 50             | 743              |
+| 50,000     | ✓         | 51             | 813              |
 
-4. REAL-TIME: 5,155 insertions/second with zero downtime
-   Local reindexing (Ada-IVF inspired) rebuilds only
-   violated clusters instead of all 1000
+### Final Results
 
-5. HNSW PER CLUSTER vs IVF PER CLUSTER:
-   Graph-based search within each cluster outperforms
-   flat IVF scan for small cluster sizes (~1000 vectors)
+| Metric           | Value           |
+|------------------|-----------------|
+| Total insertions | 50,000          |
+| Total time       | 9.70s           |
+| Insert rate      | 5,155 vectors/s |
+| Reindex events   | 51              |
+| Clusters rebuilt | 813 / 1,000     |
+| Search downtime  | **0s**          |
 
-================================================
-  PARAMETERS USED
-================================================
+---
 
-HNSW: M=16, ef_construction=200, ef_search=50
-K-Means: K=1000, batch_size=10000
-Reindex threshold: 0.1
-Beta (imbalance vs drift): 0.5
-Target cluster size: 1000
-Temperature heating: 1.1x per search hit
-Temperature cooling: 0.99x per search miss
+## 5. Full Comparison
+
+| Metric            | Baseline | Clustered | Winner              |
+|-------------------|:--------:|:---------:|---------------------|
+| Build time        | 1,013s   | 66s       | Clustered (**15×**) |
+| Recall@1 (TOP=1)  | 0.9686   | 0.4359    | Baseline            |
+| Recall@1 (TOP=20) | 0.9686   | 0.9689    | **TIE**             |
+| Recall@1 (TOP=50) | 0.9686   | 0.9960    | Clustered           |
+| QPS (TOP=1)       | 7,443    | 9,785     | Clustered (+34%)    |
+| QPS (TOP=20)      | 7,443    | 1,056     | Baseline            |
+| Insert rate       | —        | 5,155/s   | Clustered           |
+| Search downtime   | —        | 0s        | Clustered           |
+
+---
+
+## 6. Research Contributions
+
+| # | Contribution | Result |
+|---|--------------|--------|
+| 1 | **Build speed** | 15× faster index construction (66s vs 1,013s) |
+| 2 | **Recall match** | TOP_CLUSTERS=20 matches baseline searching only 2% of data |
+| 3 | **QPS win** | TOP_CLUSTERS=1 gives 34% faster QPS for latency-critical apps |
+| 4 | **Real-time** | 5,155 inserts/s with zero search downtime |
+| 5 | **HNSW per cluster** | Graph search outperforms flat IVF at ~1,000 vector cluster size |
+
+---
+
+## 7. Parameters
+
+| Parameter              | Value   |
+|------------------------|---------|
+| HNSW M                 | 16      |
+| ef_construction        | 200     |
+| ef_search              | 50      |
+| K (clusters)           | 1,000   |
+| Batch size             | 10,000  |
+| Reindex threshold      | 0.1     |
+| Beta (imbalance/drift) | 0.5     |
+| Target cluster size    | 1,000   |
+| Temperature heating    | 1.1×    |
+| Temperature cooling    | 0.99×   |
