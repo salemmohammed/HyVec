@@ -1,8 +1,7 @@
 # Real-Time Hybrid Clustered Vector Search
 
 ## Clustered Attributed Vector Search
-Queries are routed toward relevant spatial clusters [11] using HNSW [1] and FAISS [2]
-to accelerate ANN search while maintaining high recall.
+We partition the base dataset into K spatial clusters [11] using MiniBatchKMeans. Each partion will store one centroid per cluster. At query time, the query vector is compared against all centroids to identify the nearest clusters. This is the routing step, inspired by IVF in FAISS [2]. Rather than scanning the full 1M vectors, only the vectors within the top K clusters are searched. Within each cluster, we build an independent HNSW index [1], a hierarchical graph where each vector is connected to its nearest neighbors across multiple layers. Search traverses this graph greedily, moving layer by layer toward the query vector. This replaces the flat exhaustive scan used in standard IVF, giving higher recall at the same cluster probe budget.
 
 ---
 
@@ -11,7 +10,23 @@ to accelerate ANN search while maintaining high recall.
 Salem Alqahtani, Adeel Aslam, Khaled Mahmoud, Badr Asiri, Osama Al-Senani,
 Faisal Azib, Abdullatif Hadi, Faisal Awad, and Omar Abdulaziz
 
----
+## System Pipeline
+
+
+```mermaid
+flowchart LR
+    A([Query Vector\n128-dim]):::blue --> B[Distance Metric\nL2 Euclidean]:::purple
+    B --> C[Coarse Routing\nIVF-style K-Means\nTop-N Clusters]:::orange
+    C --> D[Fine Search\nHNSW per Cluster\nGraph Traversal]:::green
+    D --> E[Merge & Rank\nCandidates across\nClusters]:::red
+    E --> F([Top-k Results]):::blue
+
+    classDef blue fill:#4A90D9,stroke:#2c5f8a,color:#fff
+    classDef purple fill:#8B5CF6,stroke:#6d3fd1,color:#fff
+    classDef orange fill:#F59E0B,stroke:#b97a00,color:#fff
+    classDef green fill:#10B981,stroke:#0a7a57,color:#fff
+    classDef red fill:#EF4444,stroke:#b91c1c,color:#fff
+```
 
 ## Research Questions
 
