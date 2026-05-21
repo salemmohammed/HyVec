@@ -1,4 +1,36 @@
+# Dataset (too large for GitHub)
+experiments/sift/
+experiments/baseline/sift/
+
+# Generated numpy files
+experiments/*.npy
+experiments/sift/*.npy
+
+# Build directories
+build/
+hnswlib/build/
+faiss/build/
+
+# Compiled binaries
 experiments/baseline/sift1m_search
 experiments/approach2_attribute/build_indexes
 experiments/approach2_attribute/search
 experiments/approach2_attribute/dynamic_reindex
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Mac files
+.DS_Store
+
+# IDE files
+.vscode/
+.idea/
+
+# Scripts and archives
+push.sh
+experiments/*.tar.gz
+benchmarks/data/sift/
+benchmarks/data/*.hdf5
