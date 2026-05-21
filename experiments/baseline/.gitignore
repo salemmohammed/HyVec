@@ -1,0 +1,4 @@
+experiments/baseline/sift1m_search
+experiments/approach2_attribute/build_indexes
+experiments/approach2_attribute/search
+experiments/approach2_attribute/dynamic_reindex
