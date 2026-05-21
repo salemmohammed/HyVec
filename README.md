@@ -12,7 +12,6 @@ Faisal Azib, Abdullatif Hadi, Faisal Awad, and Omar Abdulaziz
 
 ## System Pipeline
 
-
 ```mermaid
 flowchart LR
     A([Query Vector\n128-dim]):::blue --> B[Distance Metric\nL2 Euclidean]:::purple
@@ -20,13 +19,44 @@ flowchart LR
     C --> D[Fine Search\nHNSW per Cluster\nGraph Traversal]:::green
     D --> E[Merge & Rank\nCandidates across\nClusters]:::red
     E --> F([Top-k Results]):::blue
-
     classDef blue fill:#4A90D9,stroke:#2c5f8a,color:#fff
     classDef purple fill:#8B5CF6,stroke:#6d3fd1,color:#fff
     classDef orange fill:#F59E0B,stroke:#b97a00,color:#fff
     classDef green fill:#10B981,stroke:#0a7a57,color:#fff
     classDef red fill:#EF4444,stroke:#b91c1c,color:#fff
 ```
+
+### Step-by-Step
+
+**1. Query Vector** — A 128-dimensional float vector representing the search query.  
+> Example: a SIFT descriptor of an image patch `[0.1, 0.4, ..., 0.9]`
+
+**2. Distance Metric — L2 Euclidean** — Measures similarity between vectors using squared Euclidean distance.  
+> Example: `dist(q, x) = √Σ(qᵢ - xᵢ)²`  
+> Used by both HNSW [1] and FAISS [2] as the default metric for SIFT vectors.
+
+**3. Coarse Routing — IVF-style K-Means** — The query is compared against K=1000 precomputed centroids. The nearest N clusters are selected, reducing the search space from 1M to ~N×1000 vectors.  
+> Example: `TOP_CLUSTERS=20` → search only 20,000 vectors instead of 1,000,000  
+> Inspired by the Inverted File Index (IVF) in FAISS [2] and Ada-IVF [3].
+
+**4. Fine Search — HNSW per Cluster** — Within each selected cluster, a dedicated HNSW index [1] performs greedy graph traversal to find the nearest neighbors. Each cluster has its own independent graph built with `M=16, ef_construction=200`.  
+> Example: cluster #42 has 1,200 vectors → HNSW traverses its graph layer by layer, returning top-k candidates in ~0.1ms.  
+> HNSW outperforms flat IVF scan at small cluster sizes (~1,000 vectors) [4].
+
+**5. Merge & Rank** — Candidates from all probed clusters are collected, sorted by L2 distance, and the global top-k are returned.  
+> Example: `TOP_CLUSTERS=20` returns 20×k candidates → sorted → top-k returned.
+
+**6. Top-k Results** — The k nearest neighbors to the query vector across the entire dataset.  
+> Example: `k=1` → Recall@1 = 0.9689 at `TOP_CLUSTERS=20`, matching the full-index HNSW baseline.
+
+---
+
+### References
+
+[1] Y. Malkov and D. Yashunin, "Efficient and Robust Approximate Nearest Neighbor Search Using Hierarchical Navigable Small World Graphs," *IEEE TPAMI*, 2020.  
+[2] J. Johnson, M. Douze, and H. Jégou, "Billion-scale similarity search with GPUs," *IEEE Trans. Big Data*, 2021. [GitHub](https://github.com/facebookresearch/faiss)  
+[3] J. Mohoney et al., "High-Throughput Vector Similarity Search in Knowledge Graphs," *SIGMOD*, 2023.  
+[4] J. Zhu et al., "An Experimental Evaluation of Hybrid Querying on Vectors," *PVLDB*, 2025.
 
 ## Research Questions
 
