@@ -10,21 +10,9 @@ We partition the base dataset into K spatial clusters [11] using MiniBatchKMeans
 Salem Alqahtani, Adeel Aslam, Khaled Mahmoud, Badr Asiri, Osama Al-Senani,
 Faisal Azib, Abdullatif Hadi, Faisal Awad, and Omar Abdulaziz
 
-## System Pipeline
+## Vector DB pipeline  
 
-```mermaid
-flowchart LR
-    A([Query Vector\n128-dim]):::blue --> B[Distance Metric\nL2 Euclidean]:::purple
-    B --> C[Coarse Routing\nIVF-style K-Means\nTop-N Clusters]:::orange
-    C --> D[Fine Search\nHNSW per Cluster\nGraph Traversal]:::green
-    D --> E[Merge & Rank\nCandidates across\nClusters]:::red
-    E --> F([Top-k Results]):::blue
-    classDef blue fill:#4A90D9,stroke:#2c5f8a,color:#fff
-    classDef purple fill:#8B5CF6,stroke:#6d3fd1,color:#fff
-    classDef orange fill:#F59E0B,stroke:#b97a00,color:#fff
-    classDef green fill:#10B981,stroke:#0a7a57,color:#fff
-    classDef red fill:#EF4444,stroke:#b91c1c,color:#fff
-```
+[Interactive pipeline →](https://yourname.github.io/my-vector-search)
 
 ### Step-by-Step
 

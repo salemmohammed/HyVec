@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>How a Vector Database Works — Interactive Pipeline</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/dist/tabler-icons.min.css">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #ffffff;
+      --bg2: #f5f5f4;
+      --bg3: #eeede9;
+      --text: #1a1a18;
+      --text2: #5a5a57;
+      --text3: #9a9a96;
+      --border: rgba(0,0,0,0.12);
+      --border2: rgba(0,0,0,0.22);
+      --blue50: #E6F1FB; --blue200: #85B7EB; --blue600: #185FA5; --blue800: #0C447C;
+      --purple50: #EEEDFE; --purple200: #AFA9EC; --purple600: #534AB7; --purple800: #3C3489;
+      --amber50: #FAEEDA; --amber200: #EF9F27; --amber600: #854F0B; --amber800: #633806;
+      --teal50: #E1F5EE; --teal200: #5DCAA5; --teal600: #0F6E56; --teal800: #085041;
+      --coral50: #FAECE7; --coral200: #F0997B; --coral600: #993C1D; --coral800: #712B13;
+      --green50: #EAF3DE; --green600: #3B6D11; --green800: #27500A;
+      --red50: #FCEBEB; --red600: #A32D2D; --red800: #791F1F;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #1c1c1a; --bg2: #252522; --bg3: #2e2e2b;
+        --text: #e8e8e4; --text2: #b0b0aa; --text3: #707070;
+        --border: rgba(255,255,255,0.1); --border2: rgba(255,255,255,0.18);
+        --blue50: #042C53; --blue200: #0C447C; --blue600: #85B7EB; --blue800: #B5D4F4;
+        --purple50: #26215C; --purple200: #3C3489; --purple600: #AFA9EC; --purple800: #CECBF6;
+        --amber50: #412402; --amber200: #633806; --amber600: #EF9F27; --amber800: #FAC775;
+        --teal50: #04342C; --teal200: #085041; --teal600: #5DCAA5; --teal800: #9FE1CB;
+        --coral50: #4A1B0C; --coral200: #712B13; --coral600: #F0997B; --coral800: #F5C4B3;
+      }
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      background: var(--bg3);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 0;
+    }
+
+    /* ── Header ── */
+    header {
+      background: var(--bg);
+      border-bottom: 0.5px solid var(--border);
+      padding: 20px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .header-left h1 {
+      font-size: 18px;
+      font-weight: 500;
+      color: var(--text);
+      margin-bottom: 2px;
+    }
+    .header-left p {
+      font-size: 13px;
+      color: var(--text3);
+    }
+    .header-right {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .gh-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text2);
+      text-decoration: none;
+      padding: 6px 14px;
+      border: 0.5px solid var(--border2);
+      border-radius: 8px;
+      background: var(--bg2);
+      transition: background .15s;
+    }
+    .gh-link:hover { background: var(--bg3); }
+    .gh-link i { font-size: 16px; }
+
+    /* ── Main layout ── */
+    main {
+      max-width: 900px;
+      margin: 32px auto;
+      padding: 0 20px 60px;
+    }
+
+    /* ── Intro banner ── */
+    .intro {
+      background: var(--bg);
+      border: 0.5px solid var(--border);
+      border-radius: 14px;
+      padding: 20px 24px;
+      margin-bottom: 24px;
+    }
+    .intro-label {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text3);
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      margin-bottom: 8px;
+    }
+    .intro p {
+      font-size: 14px;
+      color: var(--text2);
+      line-height: 1.75;
+    }
+    .intro strong { color: var(--text); font-weight: 500; }
+
+    /* ── Pipeline steps ── */
+    .pipeline-card {
+      background: var(--bg);
+      border: 0.5px solid var(--border);
+      border-radius: 14px;
+      padding: 20px;
+      margin-bottom: 24px;
+    }
+
+    .flow {
+      display: flex;
+      align-items: flex-start;
+      gap: 0;
+      overflow-x: auto;
+      padding-bottom: 8px;
+      margin-bottom: 20px;
+    }
+    .arrow-col {
+      display: flex;
+      align-items: center;
+      padding-top: 38px;
+      color: var(--text3);
+      font-size: 20px;
+      flex-shrink: 0;
+      padding-left: 4px;
+      padding-right: 4px;
+    }
+    .step-col {
+      flex: 1;
+      min-width: 100px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+    .step-num {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text3);
+    }
+    .step-card {
+      width: 100%;
+      background: var(--bg2);
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 8px 10px;
+      cursor: pointer;
+      transition: border-color .15s, background .15s;
+      text-align: center;
+      user-select: none;
+    }
+    .step-card:hover { border-color: var(--border2); background: var(--bg3); }
+    .step-card.active { border-color: #378ADD; border-width: 2px; background: var(--bg); }
+    .step-icon { font-size: 22px; margin-bottom: 6px; color: var(--text3); }
+    .step-card.active .step-icon { color: #378ADD; }
+    .step-title { font-size: 12px; font-weight: 500; color: var(--text); line-height: 1.3; margin-bottom: 3px; }
+    .step-sub { font-size: 11px; color: var(--text3); line-height: 1.3; }
+
+    /* ── Detail panel ── */
+    .detail-panel {
+      background: var(--bg2);
+      border: 0.5px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+    }
+    .panel-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+    .panel-badge {
+      font-size: 11px;
+      font-weight: 500;
+      padding: 3px 12px;
+      border-radius: 20px;
+      flex-shrink: 0;
+    }
+    .panel-title {
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--text);
+      flex: 1;
+    }
+
+    .section-label {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text3);
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      margin: 16px 0 7px;
+    }
+    .section-label:first-of-type { margin-top: 0; }
+    .body-text { font-size: 13px; color: var(--text2); line-height: 1.75; }
+    .body-text strong { color: var(--text); font-weight: 500; }
+
+    pre.code-block {
+      background: var(--bg);
+      border: 0.5px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-size: 12px;
+      font-family: "SF Mono", "Fira Code", "Cascadia Code", monospace;
+      color: var(--text2);
+      line-height: 1.75;
+      overflow-x: auto;
+      white-space: pre;
+    }
+
+    .chip-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+    .chip {
+      font-size: 11px;
+      padding: 4px 12px;
+      border-radius: 20px;
+      border: 0.5px solid;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .chip i { font-size: 11px; }
+    .chip-time { color: var(--blue800); border-color: var(--blue200); background: var(--blue50); }
+    .chip-space { color: var(--teal800); border-color: var(--teal200); background: var(--teal50); }
+    .chip-warn { color: var(--amber800); border-color: var(--amber200); background: var(--amber50); }
+
+    .tradeoff-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 4px;
+    }
+    @media (max-width: 560px) { .tradeoff-grid { grid-template-columns: 1fr; } }
+    .tradeoff-box {
+      background: var(--bg);
+      border: 0.5px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 14px;
+    }
+    .tradeoff-box strong {
+      display: block;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+    .tradeoff-box p { font-size: 12px; color: var(--text2); line-height: 1.65; }
+
+    .links-wrap { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+    .links-wrap a {
+      font-size: 12px;
+      padding: 5px 14px;
+      border-radius: 20px;
+      border: 0.5px solid var(--blue200);
+      color: var(--blue800);
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: var(--blue50);
+      transition: background .12s;
+    }
+    .links-wrap a:hover { background: var(--blue200); }
+    .links-wrap a i { font-size: 12px; }
+
+    /* ── Footer ── */
+    footer {
+      text-align: center;
+      font-size: 12px;
+      color: var(--text3);
+      padding: 24px 20px;
+      border-top: 0.5px solid var(--border);
+      margin-top: 12px;
+    }
+    footer a { color: var(--text3); }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <h1>How a vector database works</h1>
+    <p>An interactive breakdown of every stage — from query to top-k results</p>
+  </div>
+  <div class="header-right">
+    <a class="gh-link" href="https://github.com/salemmohammed/my-vector-search" target="_blank" rel="noopener">
+      <i class="ti ti-brand-github"></i> View on GitHub
+    </a>
+  </div>
+</header>
+
+<main>
+
+  <div class="intro">
+    <div class="intro-label">The core problem this solves</div>
+    <p>A user searched <strong>"payments not going through."</strong> The support doc existed — its title was <strong>"Transaction failure troubleshooting."</strong> A SQL <code>LIKE</code> query found nothing because the words don't match. Vector databases solve this by searching by <strong>meaning</strong>, not exact words. Click each stage below to see exactly how.</p>
+  </div>
+
+  <div class="pipeline-card">
+
+    <div class="flow" id="flow">
+      <div class="step-col">
+        <div class="step-num">Step 1</div>
+        <div class="step-card active" id="c0" onclick="show(0)">
+          <div class="step-icon"><i class="ti ti-vector"></i></div>
+          <div class="step-title">Query vector</div>
+          <div class="step-sub">Text → numbers</div>
+        </div>
+      </div>
+      <div class="arrow-col">›</div>
+      <div class="step-col">
+        <div class="step-num">Step 2</div>
+        <div class="step-card" id="c1" onclick="show(1)">
+          <div class="step-icon"><i class="ti ti-ruler-measure"></i></div>
+          <div class="step-title">Distance metric</div>
+          <div class="step-sub">How similarity is scored</div>
+        </div>
+      </div>
+      <div class="arrow-col">›</div>
+      <div class="step-col">
+        <div class="step-num">Step 3</div>
+        <div class="step-card" id="c2" onclick="show(2)">
+          <div class="step-icon"><i class="ti ti-topology-star"></i></div>
+          <div class="step-title">Coarse routing</div>
+          <div class="step-sub">IVF — skip 99%</div>
+        </div>
+      </div>
+      <div class="arrow-col">›</div>
+      <div class="step-col">
+        <div class="step-num">Step 4</div>
+        <div class="step-card" id="c3" onclick="show(3)">
+          <div class="step-icon"><i class="ti ti-share"></i></div>
+          <div class="step-title">Fine search</div>
+          <div class="step-sub">HNSW graph walk</div>
+        </div>
+      </div>
+      <div class="arrow-col">›</div>
+      <div class="step-col">
+        <div class="step-num">Step 5</div>
+        <div class="step-card" id="c4" onclick="show(4)">
+          <div class="step-icon"><i class="ti ti-trophy"></i></div>
+          <div class="step-title">Merge &amp; rank</div>
+          <div class="step-sub">Top-k results out</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="detail-panel" id="panel"></div>
+
+  </div>
+
+</main>
+
+<footer>
+  Built with HTML &amp; CSS — no frameworks. Deploy via <a href="https://pages.github.com/" target="_blank" rel="noopener">GitHub Pages</a>.
+</footer>
+
+<script>
+const BADGES = [
+  "color:var(--blue800);background:var(--blue50);border:0.5px solid var(--blue200)",
+  "color:var(--coral800);background:var(--coral50);border:0.5px solid var(--coral200)",
+  "color:var(--purple800);background:var(--purple50);border:0.5px solid var(--purple200)",
+  "color:var(--teal800);background:var(--teal50);border:0.5px solid var(--teal200)",
+  "color:var(--amber800);background:var(--amber50);border:0.5px solid var(--amber200)"
+];
+
+const steps = [
+  {
+    badge: "Step 1",
+    title: "Query vector — turning your words into numbers",
+    what: `An embedding model converts your query text into a fixed-length list of numbers called a <strong>vector</strong>. Each number captures some aspect of meaning — topic, sentiment, context. The same model used to index your documents must be used to embed the query, so they live in the same mathematical space and can be compared.`,
+    howLabel: "Popular embedding models and their sizes:",
+    code: `Model                              Dimensions   Notes
+─────────────────────────────────────────────────────────
+sentence-transformers/all-MiniLM   384d         Fast, free, great for most tasks
+OpenAI text-embedding-3-small      1536d        Hosted API, high quality
+OpenAI text-embedding-3-large      3072d        Best accuracy, higher cost
+BERT-base                          768d         Classic, open source
+CLIP (images + text)               512d         Works on images too
+
+Example:
+"payments not going through"
+  → embedding model
+  → [0.12, -0.85, 0.33, 0.71, 0.04, -0.22 … ×384]`,
+    complexity: `Time: O(d) — d = number of dimensions. Linear in vector size. Very fast per comparison.\nSpace: O(d) per vector. 384 dimensions × float32 = ~1.5 KB. 1 million docs ≈ 1.5 GB RAM.`,
+    chips: [
+      { cls: "chip-time", icon: "ti-clock", label: "O(d) per query" },
+      { cls: "chip-space", icon: "ti-database", label: "~1.5 KB per vector (384d)" },
+    ],
+    tradeoffs: [
+      { title: "More dimensions", body: "Better accuracy, more nuance captured. But needs more RAM and is slower to compare." },
+      { title: "Fewer dimensions", body: "Faster search, lower memory. May miss subtle differences in meaning." },
+      { title: "Model consistency", body: "Query and documents MUST use the same model. Mixing models gives random garbage results." },
+      { title: "Domain specificity", body: "General models underperform on legal/medical text. Domain fine-tuned models help significantly." },
+    ],
+    links: [
+      { label: "Sentence Transformers (free)", url: "https://www.sbert.net/" },
+      { label: "OpenAI Embeddings API", url: "https://platform.openai.com/docs/guides/embeddings" },
+      { label: "MTEB Leaderboard (model rankings)", url: "https://huggingface.co/spaces/mteb/leaderboard" },
+      { label: "What is a vector embedding?", url: "https://www.pinecone.io/learn/vector-embeddings/" },
+    ]
+  },
+  {
+    badge: "Step 2",
+    title: "Distance metric — what does 'close' mean in 384 dimensions?",
+    what: `Once you have two vectors (query and a stored document), you need a formula to measure how similar they are. The choice of metric affects both accuracy and speed, and must be set at index creation time — you can't change it later without rebuilding the index.`,
+    howLabel: "The three most common metrics:",
+    code: `COSINE SIMILARITY — angle between vectors
+────────────────────────────────────────────────
+cos(θ) = (A · B) / (|A| × |B|)
+Range: -1.0 (opposite meaning) → 1.0 (identical)
+Best for: text, where magnitude doesn't matter
+
+"payments not going through"  vs
+"transaction failure troubleshooting"  →  0.82  ✓ similar!
+
+"payments not going through"  vs
+"how to bake a sourdough loaf"         →  0.09  ✗ unrelated
+
+L2 EUCLIDEAN — straight-line distance
+────────────────────────────────────────────────
+d = √( Σ (Aᵢ - Bᵢ)² )
+Range: 0 (identical) → ∞  |  Smaller = more similar
+Best for: when magnitude carries meaning (e.g. word counts)
+
+DOT PRODUCT — used for retrieval-optimised models
+────────────────────────────────────────────────
+A · B = Σ (Aᵢ × Bᵢ)
+Larger = more similar
+Best for: models trained explicitly with dot product loss`,
+    complexity: `Per comparison: O(d) multiply-add operations. With SIMD (AVX2), CPUs do 8–16 ops/cycle.\nBrute-force across 1M docs × 384d ≈ 384 million ops — too slow. That's why Steps 3 & 4 exist.`,
+    chips: [
+      { cls: "chip-time", icon: "ti-clock", label: "O(d) per comparison" },
+      { cls: "chip-warn", icon: "ti-alert-triangle", label: "Brute-force = 384M ops at 1M docs" },
+    ],
+    tradeoffs: [
+      { title: "Cosine vs L2", body: "Cosine ignores vector length (text length). Better for text. L2 is better when magnitude carries information." },
+      { title: "Dot product shortcut", body: "If all vectors are L2-normalised first, cosine and dot product give identical results. Many DBs normalise automatically." },
+      { title: "Hardware acceleration", body: "FAISS uses AVX2/AVX-512 SIMD to do 8–16 comparisons per CPU cycle. GPUs can do billions per second." },
+      { title: "Don't mix metrics", body: "The metric used at query time must match the metric used to build the index. A mismatch gives wrong results silently." },
+    ],
+    links: [
+      { label: "Cosine similarity — Wikipedia", url: "https://en.wikipedia.org/wiki/Cosine_similarity" },
+      { label: "Metric types in FAISS", url: "https://faiss.ai/cpp_api/struct/structfaiss_1_1Index.html" },
+      { label: "Pinecone — choosing a metric", url: "https://www.pinecone.io/learn/vector-similarity/" },
+      { label: "FAISS (Facebook AI Similarity Search)", url: "https://engineering.fb.com/2017/03/29/data-infrastructure/faiss-a-library-for-efficient-similarity-search/" },
+    ]
+  },
+  {
+    badge: "Step 3",
+    title: "Coarse routing — IVF clusters skip 99% of your data",
+    what: `Comparing your query to every stored vector is called <strong>exact search</strong> (brute-force). At 1 million vectors it takes ~0.5s. At 100 million, it's unusable for real-time queries. IVF (Inverted File Index) solves this by pre-clustering all vectors using K-means, then only searching the most relevant clusters at query time.`,
+    howLabel: "How IVF is built and queried:",
+    code: `BUILD TIME (done once, offline):
+────────────────────────────────────────────────
+1. Run K-means on all N vectors → K cluster centroids
+2. Assign each vector to its nearest centroid
+3. Store inverted lists: centroid_id → [vector IDs]
+
+QUERY TIME (every search):
+────────────────────────────────────────────────
+nlist  = 1,000   ← total clusters built
+nprobe = 10      ← clusters searched per query
+
+1. Compare query to all 1,000 centroids → pick top 10
+2. Search only those 10 clusters → ~10,000 vectors checked
+3. Skip remaining 990,000 vectors entirely ✓
+
+Recall vs speed tradeoff:
+  nprobe = 1    → fastest,   recall ~80%
+  nprobe = 10   → balanced,  recall ~95%
+  nprobe = 100  → slower,    recall ~99.5%
+  nprobe = nlist → exact search (no speedup)`,
+    complexity: `Build: O(N × d × K × iterations) — K-means is expensive but done offline once.\nQuery: O(K×d + nprobe×(N/K)×d). With K=1000, nprobe=10: only ~1% of data touched.`,
+    chips: [
+      { cls: "chip-time", icon: "ti-clock", label: "~1% of data searched at query time" },
+      { cls: "chip-space", icon: "ti-database", label: "O(N×d) index storage" },
+      { cls: "chip-warn", icon: "ti-alert-triangle", label: "K-means build cost: expensive once" },
+    ],
+    tradeoffs: [
+      { title: "nlist (cluster count)", body: "Rule of thumb: nlist = √N. Too few = large clusters, slow search. Too many = small clusters, poor recall." },
+      { title: "nprobe (search width)", body: "Higher nprobe = better recall, slower query. Start at 10, tune to hit your recall target (e.g. 95% recall@10)." },
+      { title: "Boundary problem", body: "Vectors near a cluster edge may be closer to the query than anything in the chosen cluster. HNSW (step 4) partly compensates." },
+      { title: "IVF-PQ variant", body: "Product Quantisation compresses vectors 8–32×, fitting hundreds of millions in RAM at the cost of some accuracy." },
+    ],
+    links: [
+      { label: "FAISS IVF index docs", url: "https://faiss.ai/cpp_api/struct/structfaiss_1_1IndexIVF.html" },
+      { label: "K-means clustering — Wikipedia", url: "https://en.wikipedia.org/wiki/K-means_clustering" },
+      { label: "Vector index guide (Pinecone)", url: "https://www.pinecone.io/learn/series/faiss/vector-indexes/" },
+      { label: "Product Quantisation explained", url: "https://www.pinecone.io/learn/series/faiss/product-quantization/" },
+    ]
+  },
+  {
+    badge: "Step 4",
+    title: "Fine search — HNSW graph walking to exact neighbours",
+    what: `Within the shortlisted clusters from Step 3, HNSW (Hierarchical Navigable Small World) finds the actual nearest neighbours efficiently. It builds a multi-layer graph at index time. Search starts at the top layer (sparse, fast, long jumps) and descends to the bottom (dense, precise, short steps) — like using a highway before taking local roads.`,
+    howLabel: "HNSW layer structure and search algorithm:",
+    code: `INDEX STRUCTURE (built once at ingest):
+────────────────────────────────────────────────
+Layer 2 (sparse):   each node → ~2 long-range connections
+                    A ─────────── F ─────────── M
+Layer 1 (medium):   each node → ~M connections
+                    A─B─C─D─E─F─G─H─I─J─K─L─M
+Layer 0 (dense):    each node → ~2M connections (full graph)
+                    every vector is here
+
+QUERY SEARCH (greedy descent):
+────────────────────────────────────────────────
+ef (beam width) = 100
+
+1. Enter at top layer at a fixed entry point
+2. Greedy walk: always move to the closest neighbour to query
+3. Descend to next layer, repeat greedy walk
+4. At layer 0: beam search with ef=100 candidates
+5. Return top-k by distance score
+
+Complexity:
+  Build:  O(N × log(N) × M × d)  — M = max connections per node
+  Query:  O(log(N) × ef × d)     — logarithmic in dataset size!`,
+    complexity: `Query is O(log N) — doubling your dataset barely slows down searches. This is HNSW's killer feature vs brute-force O(N). At 1B vectors it's still fast.`,
+    chips: [
+      { cls: "chip-time", icon: "ti-clock", label: "O(log N) query — scales beautifully" },
+      { cls: "chip-space", icon: "ti-database", label: "O(N × M × d) index RAM" },
+      { cls: "chip-warn", icon: "ti-alert-triangle", label: "Build: O(N log N) — expensive once" },
+    ],
+    tradeoffs: [
+      { title: "M (max connections/node)", body: "Higher M = better recall, more RAM. M=16 is the common default. M=64 for high-accuracy production use." },
+      { title: "ef_construction (build quality)", body: "Higher = better index, slower build. ef_construction=200 is a safe default. Set once, rarely rebuild." },
+      { title: "ef (search beam width)", body: "Controls query speed vs recall. ef=100 is a safe default. Increase if recall is too low on your dataset." },
+      { title: "RAM requirement", body: "HNSW keeps the full graph in RAM. 1M vectors × 384d + graph edges ≈ 2–4 GB. Qdrant and Weaviate handle this with mmap for large datasets." },
+    ],
+    links: [
+      { label: "HNSW original paper (arXiv)", url: "https://arxiv.org/abs/1603.09320" },
+      { label: "Qdrant HNSW configuration", url: "https://qdrant.tech/documentation/concepts/indexing/#hnsw-index" },
+      { label: "Weaviate vector index docs", url: "https://weaviate.io/developers/weaviate/concepts/vector-index" },
+      { label: "ANN Benchmarks (compare algorithms)", url: "https://ann-benchmarks.com/" },
+    ]
+  },
+  {
+    badge: "Step 5",
+    title: "Merge & rank — combining clusters into your final top-k",
+    what: `After searching across multiple clusters (Step 3) and graph-walking within each (Step 4), you have a pool of candidate vectors — each with a similarity score. These are merged into a single sorted list, truncated to top-k, and returned. The final output includes the original document, similarity score, and any stored metadata.`,
+    howLabel: "What the output looks like and how apps use it:",
+    code: `MERGE (combine candidates from all searched clusters):
+────────────────────────────────────────────────
+cluster_1 → [doc_A: 0.92, doc_F: 0.81, doc_K: 0.76]
+cluster_4 → [doc_B: 0.87, doc_Q: 0.79, doc_R: 0.73]
+cluster_7 → [doc_C: 0.81, doc_T: 0.77, doc_Z: 0.70]
+
+SORT & TRUNCATE to top-k=3:
+────────────────────────────────────────────────
+1. doc_A  score: 0.92  "Transaction failure troubleshooting"
+2. doc_B  score: 0.87  "Payment gateway error codes"
+3. doc_C  score: 0.81  "Declined card handling guide"
+
+RAG USAGE (Retrieval-Augmented Generation):
+────────────────────────────────────────────────
+context = doc_A.text + doc_B.text + doc_C.text
+
+prompt = f"""
+  Context: {context}
+  User question: "payments not going through"
+  Answer using only the context above.
+"""
+→ send to LLM → grounded, accurate answer ✓`,
+    complexity: `Merge: O(nprobe × k × log k) — tiny. The bottleneck is always Steps 3 & 4, not the final sort.\nOptional score threshold filtering: drop results below min_score to avoid returning weakly related docs.`,
+    chips: [
+      { cls: "chip-time", icon: "ti-clock", label: "O(nprobe × k log k) — negligible" },
+      { cls: "chip-space", icon: "ti-database", label: "Only top-k kept in memory" },
+    ],
+    tradeoffs: [
+      { title: "k value", body: "k=3 to 10 is typical for RAG. Too many results dilute the LLM's context window. Too few miss relevant docs." },
+      { title: "Score threshold", body: "Set a minimum score (e.g. 0.60) to avoid returning weakly related results that confuse downstream models." },
+      { title: "Re-ranking", body: "A cross-encoder (e.g. ms-marco-MiniLM) can re-score top-k with higher accuracy than vector similarity alone — standard in production." },
+      { title: "Hybrid search", body: "Combine vector similarity with BM25 keyword search, then merge scores (RRF). Weaviate and Qdrant support this natively." },
+    ],
+    links: [
+      { label: "What is RAG?", url: "https://www.pinecone.io/learn/retrieval-augmented-generation/" },
+      { label: "ChromaDB — try in 5 minutes", url: "https://docs.trychroma.com/getting-started" },
+      { label: "Qdrant — open source vector DB", url: "https://qdrant.tech/" },
+      { label: "Weaviate hybrid search", url: "https://weaviate.io/developers/weaviate/search/hybrid" },
+      { label: "Cross-encoder re-ranking", url: "https://www.sbert.net/examples/applications/cross-encoder/README.html" },
+    ]
+  }
+];
+
+function show(i) {
+  for (let j = 0; j < 5; j++) {
+    document.getElementById('c' + j).classList.toggle('active', j === i);
+  }
+  const s = steps[i];
+  const chips = s.chips.map(c =>
+    `<span class="chip ${c.cls}"><i class="ti ${c.icon}"></i>${c.label}</span>`
+  ).join('');
+  const tradeoffs = s.tradeoffs.map(t =>
+    `<div class="tradeoff-box"><strong>${t.title}</strong><p>${t.body}</p></div>`
+  ).join('');
+  const links = s.links.map(l =>
+    `<a href="${l.url}" target="_blank" rel="noopener"><i class="ti ti-external-link"></i>${l.label}</a>`
+  ).join('');
+
+  document.getElementById('panel').innerHTML = `
+    <div class="panel-header">
+      <span class="panel-badge" style="${BADGES[i]}">${s.badge}</span>
+      <span class="panel-title">${s.title}</span>
+    </div>
+    <div class="section-label">What happens here</div>
+    <div class="body-text">${s.what}</div>
+    <div class="section-label">${s.howLabel}</div>
+    <pre class="code-block">${s.code}</pre>
+    <div class="section-label">Complexity</div>
+    <div class="body-text" style="white-space:pre-line">${s.complexity}</div>
+    <div class="chip-row">${chips}</div>
+    <div class="section-label">Key tradeoffs &amp; tuning knobs</div>
+    <div class="tradeoff-grid">${tradeoffs}</div>
+    <div class="section-label">Learn more</div>
+    <div class="links-wrap">${links}</div>
+  `;
+}
+
+show(0);
+</script>
+
+</body>
+</html>
