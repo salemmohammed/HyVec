@@ -310,12 +310,23 @@
     </a>
   </div>
 </header>
-
 <main>
-
   <div class="intro">
     <div class="intro-label">The core problem this solves</div>
-    <p>A user searched <strong>"payments not going through."</strong> The support doc existed — its title was <strong>"Transaction failure troubleshooting."</strong> A SQL <code>LIKE</code> query found nothing because the words don't match. Vector databases solve this by searching by <strong>meaning</strong>, not exact words. Click each stage below to see exactly how.</p>
+    <p>
+      Traditional keyword search scans documents looking for exact word matches. If a user types 
+      <strong>"payments not going through"</strong> and the document says 
+      <strong>"transaction failure troubleshooting"</strong>, the system finds nothing, even though 
+      both describe the same problem. The more documents you have, the worse this gets. Vector 
+      databases fix this by converting text into dense numerical vectors that capture meaning, not 
+      just words, so similar concepts end up close together in vector space regardless of the exact 
+      terms used. Dense vector retrieval has been shown to achieve 9–19% higher retrieval accuracy 
+      over keyword-based methods such as BM25 <a href="https://aclanthology.org/2020.emnlp-main.550" 
+      target="_blank" rel="noopener">[1]</a>. Modern vector databases operationalise this at scale 
+      using Approximate Nearest Neighbour (ANN) algorithms, returning semantically similar results 
+      within milliseconds even across billions of documents 
+      <a href="https://weaviate.io/blog/vector-search-explained" target="_blank" rel="noopener">[2]</a>.
+    </p>
   </div>
 
   <div class="pipeline-card">
