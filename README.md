@@ -12,7 +12,7 @@ Faisal Azib, Abdullatif Hadi, Faisal Awad, and Omar Abdulaziz
 
 ## Vector DB pipeline  
 
-[Interactive pipeline →](https://yourname.github.io/my-vector-search)
+[Interactive pipeline →](https://salemmohammed.github.io/my-vector-search)
 
 ### Step-by-Step
 
