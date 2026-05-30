@@ -446,6 +446,7 @@ This project is positioned within a growing body of research on **filtered and p
 [15] J. Sivic and A. Zisserman, "Video Google: A Text Retrieval Approach to Object Matching in Videos," *Proceedings of the IEEE International Conference on Computer Vision (ICCV)*, 2003.
 
 [16] D. Sculley, "Web-Scale K-Means Clustering," in *Proceedings of the 19th International Conference on World Wide Web (WWW)*, Raleigh, NC, USA, 2010, pp. 1177–1178, doi: 10.1145/1772690.1772862.
+
 ---
 
 ## Authors
