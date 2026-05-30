@@ -1,56 +1,23 @@
 # Real-Time Hybrid Clustered Vector Search
 
 ## Clustered Attributed Vector Search
-We partition the base dataset into K spatial clusters [11] using MiniBatchKMeans. Each partion will store one centroid per cluster. At query time, the query vector is compared against all centroids to identify the nearest clusters. This is the routing step, inspired by IVF in FAISS [2]. Rather than scanning the full 1M vectors, only the vectors within the top K clusters are searched. Within each cluster, we build an independent HNSW index [1], a hierarchical graph where each vector is connected to its nearest neighbors across multiple layers. Search traverses this graph greedily, moving layer by layer toward the query vector. This replaces the flat exhaustive scan used in standard IVF, giving higher recall at the same cluster probe budget.
+We partition the base dataset into K spatial clusters [16] using MiniBatchKMeans. Each partion will store one centroid per cluster. At query time, the query vector is compared against all centroids to identify the nearest clusters. This is the routing step, inspired by IVF in FAISS [2]. Rather than scanning the full 1M vectors, only the vectors within the top K clusters are searched. Within each cluster, we build an independent HNSW index [1], a hierarchical graph where each vector is connected to its nearest neighbors across multiple layers. Search traverses this graph greedily, moving layer by layer toward the query vector. This replaces the flat exhaustive scan used in standard IVF, giving higher recall at the same cluster probe budget.
 
 ---
 
-## Authors
+## Background
 
-Salem Alqahtani, Adeel Aslam, Khaled Mahmoud, Badr Asiri, Osama Al-Senani,
-Faisal Azib, Abdullatif Hadi, Faisal Awad, and Omar Abdulaziz
+The interactive visualization below provides a high-level overview of the complete vector search architecture. It illustrates how a query flows through the system, including query processing, cluster selection, similarity search, graph traversal, candidate refinement, reranking, and final result retrieval. The goal is to help readers understand how the different components interact to deliver efficient and scalable nearest-neighbor search.
 
-## Vector DB pipeline  
-
-[Interactive pipeline →](https://salemmohammed.github.io/my-vector-search)
-
-### Step-by-Step
-
-**1. Query Vector** — A 128-dimensional float vector representing the search query.  
-> Example: a SIFT descriptor of an image patch `[0.1, 0.4, ..., 0.9]`
-
-**2. Distance Metric — L2 Euclidean** — Measures similarity between vectors using squared Euclidean distance.  
-> Example: `dist(q, x) = √Σ(qᵢ - xᵢ)²`  
-> Used by both HNSW [1] and FAISS [2] as the default metric for SIFT vectors.
-
-**3. Coarse Routing — IVF-style K-Means** — The query is compared against K=1000 precomputed centroids. The nearest N clusters are selected, reducing the search space from 1M to ~N×1000 vectors.  
-> Example: `TOP_CLUSTERS=20` → search only 20,000 vectors instead of 1,000,000  
-> Inspired by the Inverted File Index (IVF) in FAISS [2] and Ada-IVF [3].
-
-**4. Fine Search — HNSW per Cluster** — Within each selected cluster, a dedicated HNSW index [1] performs greedy graph traversal to find the nearest neighbors. Each cluster has its own independent graph built with `M=16, ef_construction=200`.  
-> Example: cluster #42 has 1,200 vectors → HNSW traverses its graph layer by layer, returning top-k candidates in ~0.1ms.  
-> HNSW outperforms flat IVF scan at small cluster sizes (~1,000 vectors) [4].
-
-**5. Merge & Rank** — Candidates from all probed clusters are collected, sorted by L2 distance, and the global top-k are returned.  
-> Example: `TOP_CLUSTERS=20` returns 20×k candidates → sorted → top-k returned.
-
-**6. Top-k Results** — The k nearest neighbors to the query vector across the entire dataset.  
-> Example: `k=1` → Recall@1 = 0.9689 at `TOP_CLUSTERS=20`, matching the full-index HNSW baseline.
+▶ Explore the System Pipeline: https://salemmohammed.github.io/my-vector-search
 
 ---
-
-### References
-
-[1] Y. Malkov and D. Yashunin, "Efficient and Robust Approximate Nearest Neighbor Search Using Hierarchical Navigable Small World Graphs," *IEEE TPAMI*, 2020.  
-[2] J. Johnson, M. Douze, and H. Jégou, "Billion-scale similarity search with GPUs," *IEEE Trans. Big Data*, 2021. [GitHub](https://github.com/facebookresearch/faiss)  
-[3] J. Mohoney et al., "High-Throughput Vector Similarity Search in Knowledge Graphs," *SIGMOD*, 2023.  
-[4] J. Zhu et al., "An Experimental Evaluation of Hybrid Querying on Vectors," *PVLDB*, 2025.
 
 ## Research Questions
 
 | # | Question | Theme |
 |---|---|---|
-| RQ1 | Can representing each partition of a million-scale vector dataset by a centroid vector, and routing queries to the nearest partition, improve query throughput while preserving recall@1 ≥ 0.95 compared to searching the full unpartitioned dataset? | **Efficiency** |
+| RQ1 | Can representing each partition of a million-scale vector dataset by a centroid vector, and routing queries to the nearest partition, improve query throughput while preserving recall@1 ≥ 0.95 (At least 95% of queries return the true nearest neighbor as the first result) compared to searching the full unpartitioned dataset? | **Efficiency** |
 | RQ2 | When a vector dataset has complete attributes, partial attributes, no attributes, imbalanced clusters, or spatially overlapping clusters, which partitioning strategy preserves the best recall@1 and QPS, and what are the tradeoffs? | **Partitioning Strategy Under Varying Attribute Conditions** |
 | RQ3 | As new vectors are continuously inserted into a live index, how does recall and QPS degrade over time without re-clustering, and what is the degradation rate relative to insertion volume? | **Real-Time Degradation** |
 | RQ4 | Can background re-clustering with atomic index swapping fully restore recall and QPS to pre-insertion levels with zero query interruption, and what is the measurable cost of re-clustering itself? | **Real-Time Recovery** |
@@ -58,10 +25,37 @@ Faisal Azib, Abdullatif Hadi, Faisal Awad, and Omar Abdulaziz
 | RQ6 | Does attribute based clustering make vector search more understandable than monolithic HNSW by enabling three capabilities that standard HNSW cannot provide: (1) tracing exactly which cluster a query was routed to, (2) identifying which individual cluster is causing recall degradation, and (3) predicting worst-case query latency from cluster size alone without running the full system? | **Understandability** |
 ---
 
+## Partitioning Strategies
+
+Partitioning reduces the search space by dividing a large vector dataset into smaller subsets. Instead of searching the entire dataset, the system first identifies the most relevant partition(s) and then performs similarity search within those partitions. Different partitioning strategies provide different tradeoffs between search accuracy (Recall@1) and query throughput (QPS).
+
+### Attribute-Based Partitioning
+
+Vectors are grouped according to metadata attributes such as category, location, document type, or tenant identifier. This strategy can significantly reduce the search space when complete and reliable attributes are available. However, its effectiveness decreases when attributes are missing, incomplete, or noisy [14].
+
+### Spatial Partitioning
+
+Vectors are grouped according to their positions in the embedding space using clustering algorithms such as K-Means or MiniBatchKMeans. Queries are first routed to the nearest cluster centroids, and similarity search is then performed within the selected clusters. This approach forms the foundation of Inverted File (IVF) indexing and is widely used in large-scale vector search systems [15,3].
+
+### Hybrid Partitioning
+
+Hybrid partitioning combines metadata-based filtering with spatial clustering. The dataset is first partitioned using attributes and then clustered according to vector similarity within each partition. This strategy leverages both semantic filtering and vector locality to improve search efficiency while maintaining high recall [14].
+
+### Random Partitioning
+
+Vectors are assigned randomly to partitions. Although this approach provides balanced partition sizes and serves as a useful experimental baseline, it does not preserve vector locality and generally leads to lower search efficiency and recall compared to similarity-aware partitioning methods.
+
+### No Partitioning
+
+All vectors are stored in a single index, and every query searches the entire dataset. While this approach avoids partition-induced recall loss, it becomes increasingly expensive as dataset size grows.
+
+---
 
 ## Core Idea
 
-Standard HNSW traverses a subset of the full graph on every query, but that graph contains all 1,000,000 vectors, and its search space grows as the dataset scales. This project partitions vectors into attribute-based clusters, so each query is routed to one small cluster only making the search space bounded and independent of total dataset size.
+Standard HNSW traverses a subset of the full graph on every query, but that graph still contains all 1,000,000 vectors, causing the search space to grow as the dataset scales. This project partitions vectors into attribute-based clusters, allowing each query to be routed to a single small cluster before HNSW search is performed. As a result, the search space remains bounded and largely independent of the total dataset size.
+
+A key advantage of this design is support for real-time updates. New vectors can be inserted directly into their corresponding clusters without rebuilding a global index, enabling the system to maintain low-latency search performance while continuously ingesting new data.
 
 ```
 Standard HNSW:
@@ -232,10 +226,10 @@ mv sift/* . && rm -rf sift sift.tar.gz
 | Concept | Definition |
 |---|---|
 | Recall@1 | % of queries where true nearest neighbor was found |
-| QPS | Queries Per Second — how fast the system is |
+| QPS | Query throughput, measured as the average number of queries processed per second |
 | K (results) | Number of nearest neighbors to return |
-| ef | Exploration factor — beam width during search |
-| M | Graph connectivity — neighbors per node |
+| ef | Search exploration factor; controls the size of the candidate list maintained during graph traversal. Larger values typically improve recall at the cost of higher query latency. |
+| M | Graph connectivity; neighbors per node |
 | Cluster | A partition of vectors sharing similar spatial properties |
 | Attribute | The cluster ID assigned to each vector |
 
@@ -254,34 +248,41 @@ Both are included as Git submodules pointing to author forks.
 
 ## Repository Structure
 
-```
+```text
 my-vector-search/
-├── faiss/                         ← FAISS submodule (fork)
-├── hnswlib/                       ← hnswlib submodule (fork)
-│   └── hnswlib/
-│       ├── hnswalg.h              ← core HNSW algorithm
-│       ├── hnswlib.h              ← entry point + interfaces
-│       ├── space_l2.h             ← L2 distance function
-│       └── space_ip.h             ← inner product distance
+├── benchmarks/                    # Benchmark algorithms, datasets, and results
+│   ├── algorithms/                # Brute-force and FAISS IVF baselines
+│   ├── data/                      # Dataset download scripts and ANN benchmark data
+│   ├── figures.html               # Benchmark visualization page
+│   ├── README.md                  # Benchmark documentation
+│   └── results.csv                # Benchmark results
 │
-├── src/                           ← core reusable code
-│   ├── clustered_index.h          ← ClusteredIndex class definition
-│   └── clustered_index.cpp        ← build + search + re-clustering logic
+├── docs/                          # GitHub Pages documentation
+│   ├── index.html                 # Interactive system pipeline visualization
+│   └── figures.html               # Project figures
 │
-├── experiments/                   ← all experiments
-│   ├── README.md                  ← detailed experiment guide
-│   ├── sift/                      ← dataset files (gitignored)
-│   ├── baseline/
-│   │   └── sift1m_search.cpp      ← standard HNSW baseline
-│   └── approach2_attribute/
-│       ├── generate_attributes.py ← assign cluster attributes (K=1000)
-│       ├── build_indexes.cpp      ← build one HNSW index per cluster
-│       ├── search.cpp             ← attribute-based search
-│       └── dynamic_reindex.cpp    ← background re-clustering thread
+├── experiments/                   # Main experimental evaluation
+│   ├── approach2_attribute/       # Attribute-clustered HNSW approach
+│   │   ├── build_indexes.cpp      # Builds one HNSW index per cluster
+│   │   ├── dynamic_reindex.cpp    # Real-time insertion and background re-clustering
+│   │   ├── generate_attributes.py # Generates cluster attributes
+│   │   ├── search.cpp             # Cluster-routed ANN search
+│   │   ├── benchmark.sh           # Benchmark script
+│   │   ├── run_all.sh             # Full experiment pipeline
+│   │   ├── README.md              # Approach documentation
+│   │   └── RESULTS.md             # Approach results summary
+│   │
+│   ├── baseline/                  # Standard HNSW baseline
+│   │   ├── sift1m_search.cpp      # Baseline search implementation
+│   │   └── sift -> ../sift        # Symlink to SIFT dataset
+│   │
+│   ├── dashboard.html             # Experiment dashboard
+│   └── README.md                  # Experiment documentation
 │
-├── docs/
-├── .gitignore
-├── .gitmodules
+├── hnswlib/                       # HNSW library fork/submodule
+├── index.html                     # Root interactive landing page
+├── figures.html                   # Root visualization page
+├── results.csv                    # Main result summary
 └── README.md
 ```
 
@@ -309,15 +310,15 @@ Step 4 (real-time):
 
 ---
 
-## Baseline Results (Standard HNSW)
+## Baseline Experiment Setup
 
 | Metric | Value |
 |---|---|
 | Dataset | SIFT1M (1M × 128) |
-| Build time | 1013.82s |
-| Recall@1 | 0.9686 |
-| Search time | 1.34s |
-| QPS | 7,443 |
+| Build time | TBD |
+| Recall@1 | TBD |
+| Search time | TBD |
+| QPS | TBD |
 | M | 16 |
 | ef_construction | 200 |
 | ef_search | 50 |
@@ -325,36 +326,62 @@ Step 4 (real-time):
 
 ---
 
-## Expected vs Baseline
+## Evaluation
 
-| Metric | Baseline | Clustered (K=1000) | Goal |
-|---|---|---|---|
-| Build time | 1013s | TBD | Faster |
-| Recall@1 | 0.9686 | TBD | Maintain ≥0.95 |
-| QPS | 7,443 | TBD | Higher |
-| Search space | 1,000,000 | ~1,000 | 1000× smaller |
-
----
+| Metric | Description |
+|---|---|
+| Build Time | Index construction time |
+| Recall@1 | Top-1 nearest-neighbor accuracy |
+| QPS | Queries processed per second |
+| Search Space | Vectors searched per query |
+| Update Cost | Insert and maintenance cost |
+| Scalability | Performance as dataset size increases |
 
 ## Quick Start
 
-```bash
-# 1. Clone with submodules
-git clone --recurse-submodules https://github.com/salemmohammed/my-vector-search.git
-cd my-vector-search
+### 1. Clone the Repository
 
-# 2. Install dependencies
+```bash
+git clone https://github.com/salemmohammed/my-vector-search.git
+cd my-vector-search
+```
+
+### 2. Install Dependencies
+
+**macOS**
+
+```bash
 brew install cmake
 pip3 install numpy scikit-learn
-
-# 3. Download SIFT1M
-cd experiments && mkdir sift && cd sift
-wget ftp://ftp.irisa.fr/local/texmex/corpus/sift.tar.gz
-tar -xzf sift.tar.gz && mv sift/* . && rm -rf sift sift.tar.gz
-cd ../..
-
-# 4. See experiments/README.md for full instructions
 ```
+
+**Ubuntu**
+
+```bash
+sudo apt update
+sudo apt install -y build-essential cmake python3 python3-pip wget
+pip3 install numpy scikit-learn
+```
+
+### 3. Download the SIFT1M Dataset
+
+```bash
+cd experiments
+mkdir -p sift
+cd sift
+
+wget ftp://ftp.irisa.fr/local/texmex/corpus/sift.tar.gz
+tar -xzf sift.tar.gz
+
+mv sift/* .
+rm -rf sift sift.tar.gz
+
+cd ../..
+```
+
+### 4. Run Experiments
+
+See `experiments/README.md` for detailed instructions on running the baseline HNSW and clustered HNSW evaluations.
 
 ---
 
@@ -408,6 +435,21 @@ This project is positioned within a growing body of research on **filtered and p
 
 [10] A. Aslam et al., "Clustered Hybrid Search," GitHub Repository. [Link](https://github.com/AdeelAslamUnimore/Clustered_Hybrid_Search)
 
-[11] M. Ester, H.-P. Kriegel, J. Sander, and X. Xu,
-"A Density-Based Algorithm for Discovering Clusters in Large Spatial Databases with Noise,"
-KDD, 1996.
+[11] M. Ester, H.-P. Kriegel, J. Sander, and X. Xu, "A Density-Based Algorithm for Discovering Clusters in Large Spatial Databases with Noise," KDD, 1996.
+
+[12] J. Mohoney et al., "High-Throughput Vector Similarity Search in Knowledge Graphs," *SIGMOD*, 2023.  
+
+[13] J. Zhu et al., "An Experimental Evaluation of Hybrid Querying on Vectors," *PVLDB*, 2025.
+
+[14] Y. Jin et al., "Curator: Efficient Indexing for Multi-Tenant Vector Databases," *arXiv preprint arXiv:2401.07119*, 2024.
+
+[15] J. Sivic and A. Zisserman, "Video Google: A Text Retrieval Approach to Object Matching in Videos," *Proceedings of the IEEE International Conference on Computer Vision (ICCV)*, 2003.
+
+[16] D. Sculley, "Web-Scale K-Means Clustering," in *Proceedings of the 19th International Conference on World Wide Web (WWW)*, Raleigh, NC, USA, 2010, pp. 1177–1178, doi: 10.1145/1772690.1772862.
+---
+
+## Authors
+
+Salem Alqahtani, Adeel Aslam, Khaled Mahmoud, Badr Asiri, Osama Al-Senani,
+Faisal Azib, Abdullatif Hadi, Faisal Awad, and Omar Abdulaziz
+
