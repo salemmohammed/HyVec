@@ -95,7 +95,6 @@ echo "========================================================"
 printf "%-25s %-12s %-12s %-12s\n" "Method" "Recall@1" "QPS" "Build(s)"
 echo "--------------------------------------------------------"
 printf "%-25s %-12s %-12s %-12s\n" "Baseline HNSW"     "$BASELINE_RECALL" "$BASELINE_QPS"  "$BASELINE_BUILD"
-printf "%-25s %-12s %-12s %-12s\n" "ANN-benchmarks*"   "0.9500"           "28021"          "N/A"
 echo "--------------------------------------------------------"
 printf "%-25s %-12s %-12s %-12s\n" "Clustered TOP=1"   "$TOP1_RECALL"     "$TOP1_QPS"      "$CLUSTER_BUILD"
 printf "%-25s %-12s %-12s %-12s\n" "Clustered TOP=3"   "$TOP3_RECALL"     "$TOP3_QPS"      "$CLUSTER_BUILD"
@@ -114,7 +113,6 @@ fi
 
 # Append results
 echo "$TIMESTAMP,$MACHINE,$THREADS,baseline,$BASELINE_RECALL,$BASELINE_QPS,$BASELINE_BUILD"          >> "$RESULTS_CSV"
-echo "$TIMESTAMP,$MACHINE,$THREADS,ann_benchmarks,0.9500,28021,N/A"                                   >> "$RESULTS_CSV"
 echo "$TIMESTAMP,$MACHINE,$THREADS,clustered_top1,$TOP1_RECALL,$TOP1_QPS,$CLUSTER_BUILD"              >> "$RESULTS_CSV"
 echo "$TIMESTAMP,$MACHINE,$THREADS,clustered_top3,$TOP3_RECALL,$TOP3_QPS,$CLUSTER_BUILD"              >> "$RESULTS_CSV"
 echo "$TIMESTAMP,$MACHINE,$THREADS,clustered_top5,$TOP5_RECALL,$TOP5_QPS,$CLUSTER_BUILD"              >> "$RESULTS_CSV"

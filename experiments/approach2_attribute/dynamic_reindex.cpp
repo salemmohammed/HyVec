@@ -2,7 +2,7 @@
  * dynamic_reindex.cpp
  * -------------------
  * Real-Time Insertion with Local Background Re-clustering.
- * Inspired by Ada-IVF (Mohoney et al., 2024)
+ * Real-time insertion with background re-clustering.
  *
  * Compile:
  *   g++ -O3 -std=c++17 dynamic_reindex.cpp -o dynamic_reindex -I../../hnswlib -lpthread

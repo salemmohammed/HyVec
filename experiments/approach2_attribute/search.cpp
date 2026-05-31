@@ -149,7 +149,7 @@ int main() {
     }
 
     std::cout << std::string(51, '-') << std::endl;
-    std::cout << "Baseline:      0.9686       7443.0" << std::endl;
+    
 
     for (auto& [c, idx] : indexes) delete idx;
     return 0;
