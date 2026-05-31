@@ -16,10 +16,16 @@ Each algorithm can be run on any ANN-Benchmarks dataset.
 
 ## Reference Algorithms
 
-| File | Algorithm | Type | From |
-|---|---|---|---|
-| `faiss_ivf.py` | FAISS IVF | Partition | Facebook |
-| `brute_force.py` | Brute Force | Exact | Reference |
+| File | Language | Algorithm | Type | Note |
+|---|---|---|---|---|
+| `brute_force.cpp` | C++ | Brute Force | Exact | Manual implementation — study version |
+| `brute_force.py` | Python | Brute Force | Exact | FAISS-backed — same results, less code |
+| `faiss_ivf.cpp` | C++ | FAISS IVF | Partition | Manual implementation — study version |
+| `faiss_ivf.py` | Python | FAISS IVF | Partition | FAISS-backed — same results, less code |
+
+> The C++ files implement every step manually (k-means, posting lists, flat scan)
+> for study purposes. The Python files call FAISS internally and produce identical
+> results. Use Python for benchmarking, C++ for understanding the internals.
 
 ---
 
@@ -42,21 +48,37 @@ These run via the official ANN-Benchmarks framework:
 
 ## How to Run Each
 
-### Our clustered HNSW
+### Our Clustered HNSW (C++)
 ```bash
-g++ -O3 -std=c++17 clustered_hnsw.cpp -o clustered_hnsw -I../../hnswlib
+g++ -O3 -std=c++17 -fopenmp clustered_hnsw.cpp -o clustered_hnsw \
+    -I../../hnswlib $(pkg-config --cflags --libs hdf5)
 ./clustered_hnsw --dataset ../data/sift-128-euclidean.hdf5
 ```
 
-### FAISS IVF
+### Brute Force — C++ (manual, for study)
 ```bash
-pip3 install faiss-cpu h5py
-python3 faiss_ivf.py --dataset ../data/sift-128-euclidean.hdf5
+g++ -O3 -std=c++17 -fopenmp brute_force.cpp -o brute_force \
+    $(pkg-config --cflags --libs hdf5)
+./brute_force --metric l2 --dataset ../data/sift-128-euclidean.hdf5
 ```
 
-### Brute force (exact search, recall=1.0)
+### Brute Force — Python (FAISS-backed, for benchmarking)
 ```bash
-python3 brute_force.py --dataset ../data/sift-128-euclidean.hdf5
+pip3 install faiss-cpu h5py numpy
+python3 brute_force.py --metric l2 --dataset ../data/sift-128-euclidean.hdf5
+```
+
+### FAISS IVF — C++ (manual, for study)
+```bash
+g++ -O3 -std=c++17 -fopenmp faiss_ivf.cpp -o faiss_ivf \
+    $(pkg-config --cflags --libs hdf5)
+./faiss_ivf --dataset ../data/sift-128-euclidean.hdf5
+```
+
+### FAISS IVF — Python (FAISS-backed, for benchmarking)
+```bash
+pip3 install faiss-cpu h5py numpy
+python3 faiss_ivf.py --dataset ../data/sift-128-euclidean.hdf5
 ```
 
 ### Full ANN-Benchmarks suite
@@ -75,6 +97,7 @@ The following papers provide head-to-head comparisons of ANN algorithms and are
 the standard citations used in this area.
 
 ### Benchmark Frameworks
+
 1. M. Aumüller, E. Bernhardsson, A. Faithfull: **ANN-Benchmarks: A Benchmarking
    Tool for Approximate Nearest Neighbor Algorithms.** Information Systems, 2019.
    DOI: 10.1016/j.is.2019.02.006 · [ann-benchmarks.com](https://ann-benchmarks.com) · [GitHub](https://github.com/erikbern/ann-benchmarks)
@@ -87,6 +110,7 @@ the standard citations used in this area.
    [arxiv.org/abs/2401.08281](https://arxiv.org/abs/2401.08281)
 
 ### Survey & Comparison Papers
+
 4. W. Li, Y. Zhang, Y. Sun, W. Wang, M. Li, W. Zhang, X. Lin: **Approximate
    Nearest Neighbor Search on High Dimensional Data — Experiments, Analyses,
    and Improvement.** IEEE Transactions on Knowledge and Data Engineering, 2020.
