@@ -192,25 +192,13 @@ python plot.py --dataset sift-128-euclidean
 
 ---
 
-## Citation
-
-All benchmark comparisons in this project use the ANN-Benchmarks framework:
-
-> M. Aumüller, E. Bernhardsson, A. Faithfull:
-> **ANN-Benchmarks: A Benchmarking Tool for Approximate Nearest Neighbor Algorithms.**
-> Information Systems, 2019.
-> DOI: [10.1016/j.is.2019.02.006](https://doi.org/10.1016/j.is.2019.02.006)
-
-Website: [https://ann-benchmarks.com](https://ann-benchmarks.com)
-GitHub: [https://github.com/erikbern/ann-benchmarks](https://github.com/erikbern/ann-benchmarks)
-
----
-
 ## References
+
+> All benchmark comparisons in this project use the ANN-Benchmarks framework [1].
 
 1. M. Aumüller, E. Bernhardsson, A. Faithfull: **ANN-Benchmarks: A Benchmarking
    Tool for Approximate Nearest Neighbor Algorithms.** Information Systems, 2019.
-   DOI: 10.1016/j.is.2019.02.006
+   DOI: 10.1016/j.is.2019.02.006 · [ann-benchmarks.com](https://ann-benchmarks.com) · [GitHub](https://github.com/erikbern/ann-benchmarks)
 
 2. Y. Malkov, D. Yashunin: **Efficient and Robust Approximate Nearest Neighbor
    Search Using Hierarchical Navigable Small World Graphs.** IEEE TPAMI, 2020.
@@ -221,7 +209,7 @@ GitHub: [https://github.com/erikbern/ann-benchmarks](https://github.com/erikbern
 
 4. H. Jégou, M. Douze, C. Schmid: **Product Quantization for Nearest Neighbor
    Search.** IEEE TPAMI, 2011. DOI: 10.1109/TPAMI.2010.57
-
+   
 ---
 
 ## Figures
