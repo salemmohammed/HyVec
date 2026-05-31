@@ -4,23 +4,26 @@ This benchmark evaluates our clustered HNSW system against standard ANN algorith
 
 ---
 
-## Citation
+## ANN-Benchmarks Evaluation Framework
 
-All benchmark comparisons in this project use the ANN-Benchmarks framework:
-
-> M. Aumüller, E. Bernhardsson, A. Faithfull:
-> **ANN-Benchmarks: A Benchmarking Tool for Approximate Nearest Neighbor Algorithms.**
-> Information Systems, 2019.
-> DOI: [10.1016/j.is.2019.02.006](https://doi.org/10.1016/j.is.2019.02.006)
-
-Website: [https://ann-benchmarks.com](https://ann-benchmarks.com)
-GitHub:  [https://github.com/erikbern/ann-benchmarks](https://github.com/erikbern/ann-benchmarks)
+ANN-Benchmarks [1] is a standardized evaluation environment for approximate nearest neighbor (ANN) search algorithms. It provides pre-computed datasets with ground-truth nearest neighbors, isolated execution environments per algorithm, and a unified set of metrics including recall, QPS, build time, and index size. We rerun all baseline algorithms — including hnswlib, FAISS-IVF, ScaNN, and Annoy — 
+on our NVIDIA DGX Spark to ensure a direct and fair comparison against our Clustered 
+HNSW system under identical hardware conditions.
 
 ---
 
-## ANN-Benchmarks Evaluation Framework
+## Hardware Specification
 
-ANN-Benchmarks [1] is a standardized evaluation environment for approximate nearest neighbor (ANN) search algorithms. It provides pre-computed datasets with ground-truth nearest neighbors, isolated execution environments per algorithm, and a unified set of metrics including recall, QPS, build time, and index size. To ensure fair comparison, the framework enforces single CPU execution with hyperthreading disabled. We rerun the framework under identical conditions to directly compare our Clustered HNSW system against existing algorithms.
+| Component | Specification |
+|---|---|
+| **System** | NVIDIA DGX Spark |
+| **Chip** | GB10 Grace Blackwell |
+| **CPU** | ARM Cortex @ 3.8 GHz |
+| **Memory** | 128GB unified memory |
+| **Storage** | 4TB |
+| **AI Performance** | Up to 1 petaFLOP (FP4) |
+| **Max Model Size** | Up to 200B parameters (FP4) |
+| **Operating System** | NVIDIA DGX OS |
 
 ---
 
@@ -101,7 +104,7 @@ Example: k=10, found 9 of the true 10 nearest neighbors → Recall = 0.9
 ---
 
 ## Experimental Setup
- 
+
 - **ANN-Benchmarks baseline:** AWS r6i.16xlarge (single CPU, hyperthreading disabled).
 - **Our system:** NVIDIA DGX Spark (128GB unified memory, NVIDIA Blackwell GPU).
 - All experiments were rerun on our hardware to ensure a fair and consistent comparison across all evaluated algorithms.
@@ -123,7 +126,7 @@ Example: k=10, found 9 of the true 10 nearest neighbors → Recall = 0.9
 | Method | Build Time (s) | vs Baseline |
 |---|---|---|
 | Baseline HNSW (1M vectors) | — | 1× |
-| **Clustered HNSW (1000 indexes)** | — | TBD |
+| **Clustered HNSW** | — | TBD |
 | hnswlib (ANN-Benchmarks) | — | — |
 | FAISS-IVF (ANN-Benchmarks) | — | — |
 
@@ -179,15 +182,27 @@ python plot.py --dataset sift-128-euclidean
 
 ## Expected Findings
 
-1. **Build time:** 
+1. **Build time:**
 
-2. **Recall match:** 
+2. **Recall match:**
 
-3. **QPS tradeoff:** 
+3. **QPS tradeoff:**
 
 4. **Real-time insertions:**
 
+---
 
+## Citation
+
+All benchmark comparisons in this project use the ANN-Benchmarks framework:
+
+> M. Aumüller, E. Bernhardsson, A. Faithfull:
+> **ANN-Benchmarks: A Benchmarking Tool for Approximate Nearest Neighbor Algorithms.**
+> Information Systems, 2019.
+> DOI: [10.1016/j.is.2019.02.006](https://doi.org/10.1016/j.is.2019.02.006)
+
+Website: [https://ann-benchmarks.com](https://ann-benchmarks.com)
+GitHub: [https://github.com/erikbern/ann-benchmarks](https://github.com/erikbern/ann-benchmarks)
 
 ---
 
@@ -207,8 +222,7 @@ python plot.py --dataset sift-128-euclidean
 4. H. Jégou, M. Douze, C. Schmid: **Product Quantization for Nearest Neighbor
    Search.** IEEE TPAMI, 2011. DOI: 10.1109/TPAMI.2010.57
 
-5. J. Mohoney et al.: **Incremental IVF Index Maintenance for Streaming Vector
-   Search (Ada-IVF).** arXiv: 2411.00970, 2024.
+---
 
 ## Figures
 

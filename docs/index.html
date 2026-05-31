@@ -401,7 +401,7 @@ const steps = [
   {
     badge: "Step 1",
     title: "Query vector — turning your words into numbers",
-    what: `An embedding model converts your query text into a fixed-length list of numbers called a <strong>vector</strong>. Each number captures some aspect of meaning — topic, sentiment, context. The same model used to index your documents must be used to embed the query, so they live in the same mathematical space and can be compared.`,
+    what: `An embedding model converts your query text into a fixed-length list of numbers called a <strong>vector</strong>. Each number captures some aspect of meaning like topic, sentiment, context. The same model used to index your documents must be used to embed the query, so they live in the same mathematical space and can be compared.`,
     howLabel: "Popular embedding models and their sizes:",
     code: `Model                              Dimensions   Notes
 ─────────────────────────────────────────────────────────
@@ -415,7 +415,7 @@ Example:
 "payments not going through"
   → embedding model
   → [0.12, -0.85, 0.33, 0.71, 0.04, -0.22 … ×384]`,
-    complexity: `Time: O(d) — d = number of dimensions. Linear in vector size. Very fast per comparison.\nSpace: O(d) per vector. 384 dimensions × float32 = ~1.5 KB. 1 million docs ≈ 1.5 GB RAM.`,
+    complexity: `Time: O(d) — d = number of dimensions. Linear in vector size. Very fast per comparison.\nSpace: O(n·d). For 384-dimensional float32 embeddings, each vector uses 384 × 4 = 1,536 bytes ≈ 1.5 KB. Therefore, 1 million vectors require about 1.5 GB of RAM for raw vector storage only, before index overhead.`, 
     chips: [
       { cls: "chip-time", icon: "ti-clock", label: "O(d) per query" },
       { cls: "chip-space", icon: "ti-database", label: "~1.5 KB per vector (384d)" },
@@ -434,7 +434,7 @@ Example:
     ]
   },
   {
-    badge: "Step 2",
+    badge: "Step 2",s
     title: "Distance metric — what does 'close' mean in 384 dimensions?",
     what: `Once you have two vectors (query and a stored document), you need a formula to measure how similar they are. The choice of metric affects both accuracy and speed, and must be set at index creation time — you can't change it later without rebuilding the index.`,
     howLabel: "The three most common metrics:",
@@ -445,10 +445,10 @@ Range: -1.0 (opposite meaning) → 1.0 (identical)
 Best for: text, where magnitude doesn't matter
 
 "payments not going through"  vs
-"transaction failure troubleshooting"  →  0.82  ✓ similar!
+"transaction failure troubleshooting"  →  0.82  → similar!
 
 "payments not going through"  vs
-"how to bake a sourdough loaf"         →  0.09  ✗ unrelated
+"how to bake a sourdough loaf"         →  0.09  → unrelated
 
 L2 EUCLIDEAN — straight-line distance
 ────────────────────────────────────────────────

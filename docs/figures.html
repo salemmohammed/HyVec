@@ -55,12 +55,7 @@ h1 { font-size: 20px; font-weight: 600; margin-bottom: 4px; }
   border-top: 1px solid #eee;
   padding-top: 12px;
 }
-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 12px;
-  overflow-x: auto;
-}
+table { width: 100%; border-collapse: collapse; font-size: 12px; }
 th {
   text-align: center;
   padding: 8px 6px;
@@ -69,8 +64,17 @@ th {
   color: #333;
   background: #fafafa;
   font-size: 11px;
+  vertical-align: bottom;
+  white-space: nowrap;
 }
 th:first-child { text-align: left; }
+th .abbr {
+  display: block;
+  font-size: 9px;
+  font-weight: 400;
+  color: #888;
+  margin-top: 2px;
+}
 td {
   text-align: center;
   padding: 6px 6px;
@@ -79,24 +83,25 @@ td {
 }
 td:first-child { text-align: left; font-weight: 500; }
 tr:hover td { background: #fafafa; }
-.gen1 { background: #f5f5f5; }
-.gen2 { background: #eef4ff; }
-.gen3 { background: #eefaf5; }
-.gen4 { background: #fff8e1; font-weight: 500; }
-.ours { color: #8a5c00; font-weight: 700; }
+.gen1 td { background: #f5f5f5; }
+.gen2 td { background: #eef4ff; }
+.gen3 td { background: #eefaf5; }
+.gen4 td { background: #fff8e1; font-weight: 500; }
+.ours  { color: #8a5c00; font-weight: 700; }
 .check { color: #1a7a4a; font-weight: 700; }
-.dash { color: #aaa; }
-.badge {
-  display: inline-block;
-  padding: 1px 6px;
-  border-radius: 4px;
-  font-size: 10px;
-  font-weight: 600;
+.dash  { color: #aaa; }
+.xxx   { color: #bbb; font-style: italic; }
+.placeholder-chart {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 320px;
+  border: 2px dashed #ddd;
+  border-radius: 8px;
+  color: #aaa;
+  font-size: 13px;
+  background: #fafafa;
 }
-.b-gray { background: #eee; color: #555; }
-.b-blue { background: #dbeafe; color: #1e40af; }
-.b-teal { background: #d1fae5; color: #065f46; }
-.b-amber { background: #fef3c7; color: #92400e; }
 .refs {
   font-size: 11.5px;
   color: #444;
@@ -122,38 +127,37 @@ tr:hover td { background: #fafafa; }
 }
 .nav a:hover { background: #f5f5f5; }
 svg text { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
-.fig4-node rect { cursor: pointer; }
-.fig4-node rect:hover { opacity: 0.85; }
 @media (prefers-color-scheme: dark) {
   body { background: #1a1a1a; color: #e5e5e5; }
   .section { background: #242424; border-color: #333; }
   th { background: #2a2a2a; color: #ccc; border-bottom-color: #555; }
   td { border-bottom-color: #2f2f2f; }
   tr:hover td { background: #2a2a2a; }
-  .gen1 { background: #252525; }
-  .gen2 { background: #1e2535; }
-  .gen3 { background: #1a2820; }
-  .gen4 { background: #2a2000; }
+  .gen1 td { background: #252525; }
+  .gen2 td { background: #1e2535; }
+  .gen3 td { background: #1a2820; }
+  .gen4 td { background: #2a2000; }
   .nav a { background: #242424; border-color: #333; color: #ccc; }
   .nav a:hover { background: #2a2a2a; }
   .cite-block { background: #2a2a2a; border-color: #555; color: #aaa; }
   .fig-note { color: #888; border-top-color: #333; }
   .refs { color: #888; }
   .refs b { color: #ccc; }
+  .placeholder-chart { border-color: #444; background: #1e1e1e; color: #666; }
 }
 </style>
 </head>
 <body>
 
 <h1>Real-Time Hybrid Clustered Vector Search</h1>
-<p class="subtitle">Salem Alqahtani, Adeel Aslam, Khaled Mahmoud et al. — 2024</p>
+<p class="subtitle">Salem Alqahtani, Adeel Aslam, Khaled Mahmoud</p>
 
 <div class="cite-block">
   <b>Primary benchmark citation:</b><br>
   M. Aumüller, E. Bernhardsson, A. Faithfull: <i>ANN-Benchmarks: A Benchmarking Tool for
-  Approximate Nearest Neighbor Algorithms.</i> Information Systems, 2019.
-  DOI: <a href="https://doi.org/10.1016/j.is.2019.02.006">10.1016/j.is.2019.02.006</a> ·
-  Website: <a href="https://ann-benchmarks.com">ann-benchmarks.com</a>
+  Approximate Nearest Neighbor Algorithms.</i> DOI: <a href="https://doi.org/10.48550/arXiv.1807.05614">10.48550/arXiv.1807.05614</a> ·
+  Website: <a href="https://ann-benchmarks.com">ann-benchmarks.com</a> ·
+  GitHub: <a href="https://github.com/erikbern/ann-benchmarks">erikbern/ann-benchmarks</a>
 </div>
 
 <div class="nav">
@@ -167,208 +171,164 @@ svg text { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-seri
 <!-- ═══════════════════════════════════════════════════════════ TABLE 1 -->
 <div class="section" id="table1">
   <p class="fig-title">Table 1: Comparing ANN algorithms across key design dimensions</p>
-  <p class="fig-sub">
-    G=Generation · Index=data structure · Dist=distance metric · Build=construction time on SIFT1M (MacBook, 1 thread) ·
-    R@1=Recall@1 · QPS=queries/sec · ✓=supported · —=not applicable
-  </p>
+  <p class="fig-sub">✓ = supported &nbsp;·&nbsp; — = not applicable &nbsp;·&nbsp; Build time, Recall@1, and QPS to be filled after experiments</p>
 
   <div style="overflow-x:auto;">
   <table>
     <thead>
       <tr>
-        <th style="min-width:160px">Algorithm</th>
-        <th>G.</th>
+        <th style="min-width:170px">Algorithm</th>
+        <th>Generation<span class="abbr">G.</span></th>
         <th>Index</th>
-        <th>Dist.</th>
+        <th>Distance<span class="abbr">Dist.</span></th>
         <th>Partition</th>
         <th>Graph</th>
         <th>GPU</th>
         <th>Real-time</th>
-        <th>Build (s)</th>
-        <th>R@1</th>
-        <th>QPS</th>
+        <th>Build time (s)<span class="abbr">SIFT1M, 1 thread</span></th>
+        <th>Recall@1<span class="abbr">R@1</span></th>
+        <th>Queries / sec<span class="abbr">QPS</span></th>
         <th>Citation</th>
       </tr>
     </thead>
     <tbody>
-      <!-- Gen 1 -->
       <tr class="gen1">
         <td>Brute force</td>
         <td>1</td><td>flat</td><td>any</td>
         <td class="dash">—</td><td class="dash">—</td>
         <td class="check">✓</td><td class="dash">—</td>
-        <td>0</td><td>1.000</td><td>~100</td>
-        <td>—</td>
+        <td>0</td><td>1.000</td><td class="xxx">xxx</td><td>—</td>
       </tr>
       <tr class="gen1">
         <td>KD-tree [1]</td>
         <td>1</td><td>tree</td><td>L2</td>
         <td>axis</td><td class="dash">—</td>
         <td class="dash">—</td><td class="dash">—</td>
-        <td>&lt;1</td><td>1.000</td><td>low d only</td>
-        <td>Bentley 1975</td>
+        <td class="xxx">xxx</td><td>1.000</td><td>low-d only</td><td>Bentley 1975</td>
       </tr>
       <tr class="gen1">
         <td>Ball tree [2]</td>
         <td>1</td><td>tree</td><td>L2</td>
         <td>sphere</td><td class="dash">—</td>
         <td class="dash">—</td><td class="dash">—</td>
-        <td>&lt;1</td><td>1.000</td><td>low d only</td>
-        <td>Omohundro 1989</td>
+        <td class="xxx">xxx</td><td>1.000</td><td>low-d only</td><td>Omohundro 1989</td>
       </tr>
-      <!-- Gen 2 -->
       <tr class="gen2">
         <td>LSH [3]</td>
         <td>2</td><td>hash</td><td>any</td>
         <td>hash</td><td class="dash">—</td>
         <td class="dash">—</td><td class="dash">—</td>
-        <td>fast</td><td>~0.80</td><td>medium</td>
-        <td>Indyk 1998</td>
+        <td class="xxx">xxx</td><td class="xxx">xxx</td><td class="xxx">xxx</td><td>Indyk 1998</td>
       </tr>
       <tr class="gen2">
         <td>IVF [4]</td>
         <td>2</td><td>inverted</td><td>L2</td>
         <td>k-means</td><td class="dash">—</td>
         <td class="dash">—</td><td class="dash">—</td>
-        <td>fast</td><td>~0.97</td><td>high</td>
-        <td>Jégou 2010</td>
+        <td class="xxx">xxx</td><td class="xxx">xxx</td><td class="xxx">xxx</td><td>Jégou 2010</td>
       </tr>
       <tr class="gen2">
         <td>FAISS IVF [5]</td>
-        <td>2</td><td>IVF+PQ</td><td>L2/IP</td>
+        <td>2</td><td>IVF+PQ</td><td>L2 / IP</td>
         <td>k-means</td><td class="dash">—</td>
         <td class="check">✓</td><td class="dash">—</td>
-        <td><b>2.11</b></td><td>0.9716</td><td>22,767</td>
-        <td>Johnson 2017</td>
+        <td class="xxx">xxx</td><td class="xxx">xxx</td><td class="xxx">xxx</td><td>Johnson 2017</td>
       </tr>
       <tr class="gen2">
         <td>Annoy [6]</td>
         <td>2</td><td>tree</td><td>any</td>
         <td>random</td><td class="dash">—</td>
         <td class="dash">—</td><td class="dash">—</td>
-        <td>fast</td><td>~0.90</td><td>medium</td>
-        <td>Bernhardsson 2013</td>
+        <td class="xxx">xxx</td><td class="xxx">xxx</td><td class="xxx">xxx</td><td>Bernhardsson 2013</td>
       </tr>
       <tr class="gen2">
         <td>ScaNN [7]</td>
-        <td>2</td><td>IVF+AQ</td><td>IP/L2</td>
+        <td>2</td><td>IVF+AQ</td><td>IP / L2</td>
         <td>hier.</td><td class="dash">—</td>
         <td class="check">✓</td><td class="dash">—</td>
-        <td>medium</td><td>~0.97</td><td>very high</td>
-        <td>Guo 2020</td>
+        <td class="xxx">xxx</td><td class="xxx">xxx</td><td class="xxx">xxx</td><td>Guo 2020</td>
       </tr>
-      <!-- Gen 3 -->
       <tr class="gen3">
         <td>NSW [8]</td>
         <td>3</td><td>graph</td><td>any</td>
         <td class="dash">—</td><td>1-layer</td>
         <td class="dash">—</td><td class="dash">—</td>
-        <td>medium</td><td>~0.90</td><td>medium</td>
-        <td>Malkov 2011</td>
+        <td class="xxx">xxx</td><td class="xxx">xxx</td><td class="xxx">xxx</td><td>Malkov 2011</td>
       </tr>
       <tr class="gen3">
         <td>HNSW [9]</td>
         <td>3</td><td>graph</td><td>any</td>
         <td class="dash">—</td><td>multi-layer</td>
         <td class="dash">—</td><td class="dash">—</td>
-        <td>1013</td><td>0.9686</td><td>7,443</td>
-        <td>Malkov 2016</td>
+        <td class="xxx">xxx</td><td class="xxx">xxx</td><td class="xxx">xxx</td><td>Malkov 2016</td>
       </tr>
       <tr class="gen3">
         <td>Glass [10]</td>
         <td>3</td><td>graph</td><td>any</td>
         <td class="dash">—</td><td>multi-layer</td>
         <td class="dash">—</td><td class="dash">—</td>
-        <td>fast</td><td>~0.99</td><td>highest</td>
-        <td>Hy 2023</td>
+        <td class="xxx">xxx</td><td class="xxx">xxx</td><td class="xxx">xxx</td><td>Hy 2023</td>
       </tr>
       <tr class="gen3">
         <td>DiskANN [11]</td>
-        <td>3</td><td>graph</td><td>L2/IP</td>
+        <td>3</td><td>graph</td><td>L2 / IP</td>
         <td class="dash">—</td><td>disk-based</td>
         <td class="dash">—</td><td class="dash">—</td>
-        <td>slow</td><td>~0.97</td><td>medium</td>
-        <td>Jayaram 2019</td>
+        <td class="xxx">xxx</td><td class="xxx">xxx</td><td class="xxx">xxx</td><td>Jayaram 2019</td>
       </tr>
       <tr class="gen3">
         <td>NGT [12]</td>
-        <td>3</td><td>graph</td><td>L2/IP</td>
+        <td>3</td><td>graph</td><td>L2 / IP</td>
         <td class="dash">—</td><td>multi-type</td>
         <td class="dash">—</td><td class="dash">—</td>
-        <td>medium</td><td>~0.96</td><td>high</td>
-        <td>Iwasaki 2018</td>
+        <td class="xxx">xxx</td><td class="xxx">xxx</td><td class="xxx">xxx</td><td>Iwasaki 2018</td>
       </tr>
       <tr class="gen3">
         <td>PyNNDescent [13]</td>
         <td>3</td><td>graph</td><td>any</td>
         <td class="dash">—</td><td>descent</td>
         <td class="dash">—</td><td class="dash">—</td>
-        <td>medium</td><td>~0.95</td><td>medium</td>
-        <td>McInnes 2018</td>
+        <td class="xxx">xxx</td><td class="xxx">xxx</td><td class="xxx">xxx</td><td>McInnes 2018</td>
       </tr>
-      <!-- Gen 4 OUR WORK -->
       <tr class="gen4">
         <td>Clustered HNSW TOP=1 <span class="ours">[ours]</span></td>
         <td>4</td><td>cluster+graph</td><td>L2</td>
         <td>k-means</td><td>per-cluster</td>
         <td class="dash">—</td><td class="check">✓</td>
-        <td><b>66</b></td><td>0.4359</td><td><b>9,785</b></td>
-        <td>this work</td>
+        <td class="xxx">xxx</td><td class="xxx">xxx</td><td class="xxx">xxx</td><td>this work</td>
       </tr>
       <tr class="gen4">
         <td>Clustered HNSW TOP=10 <span class="ours">[ours]</span></td>
         <td>4</td><td>cluster+graph</td><td>L2</td>
         <td>k-means</td><td>per-cluster</td>
         <td class="dash">—</td><td class="check">✓</td>
-        <td><b>66</b></td><td>0.9117</td><td>1,998</td>
-        <td>this work</td>
+        <td class="xxx">xxx</td><td class="xxx">xxx</td><td class="xxx">xxx</td><td>this work</td>
       </tr>
       <tr class="gen4">
         <td>Clustered HNSW TOP=20 <span class="ours">[ours]</span></td>
         <td>4</td><td>cluster+graph</td><td>L2</td>
         <td>k-means</td><td>per-cluster</td>
         <td class="dash">—</td><td class="check">✓</td>
-        <td><b>66</b></td><td><b>0.9689</b></td><td>1,056</td>
-        <td>this work</td>
+        <td class="xxx">xxx</td><td class="xxx">xxx</td><td class="xxx">xxx</td><td>this work</td>
       </tr>
       <tr class="gen4">
         <td>Clustered HNSW TOP=50 <span class="ours">[ours]</span></td>
         <td>4</td><td>cluster+graph</td><td>L2</td>
         <td>k-means</td><td>per-cluster</td>
         <td class="dash">—</td><td class="check">✓</td>
-        <td><b>66</b></td><td>0.9960</td><td>435</td>
-        <td>this work</td>
+        <td class="xxx">xxx</td><td class="xxx">xxx</td><td class="xxx">xxx</td><td>this work</td>
       </tr>
     </tbody>
   </table>
   </div>
-
-  <p class="fig-note">
-    <b>Legend:</b> G=Generation (1=exact, 2=partition, 3=graph, 4=our hybrid).
-    Index types: flat=linear scan, hash=LSH buckets, inverted=IVF clusters, tree=spatial tree,
-    graph=navigable graph, cluster+graph=our hybrid.
-    Partition: axis=axis-aligned split, hash=LSH buckets, k-means=Voronoi cells, random=random projections,
-    hier.=hierarchical, sphere=ball-tree. Graph: 1-layer=NSW, multi-layer=HNSW, disk-based=DiskANN,
-    per-cluster=our HNSW per partition.
-    Build time and QPS measured on SIFT1M (1M×128d) on MacBook (single thread, ef=50, M=16).
-    ANN-benchmarks reports hnswlib ef=50 achieving QPS=28,021 at Recall=0.950 on a Linux server.
-    <span class="ours">✓ Real-time</span> = supports live insertions without full rebuild.
-    Highlighted rows <span style="background:#fff8e1;padding:0 4px">■</span> = our contributions.
-  </p>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════════ FIGURE 4 -->
 <div class="section" id="figure4">
   <p class="fig-title">Figure 4: Derivation of ANN algorithms from brute force to Clustered HNSW</p>
-  <p class="fig-sub">
-    Arrows show which algorithm inspired or derived from which.
-    Orange arrows show our algorithm's two parent contributions.
-    Dashed arrow shows inspiration from Ada-IVF [14].
-  </p>
+  <p class="fig-sub">Arrows show algorithmic lineage. Orange arrows show the two parent contributions our work combines.</p>
 
-  <svg width="100%" viewBox="0 0 680 420" role="img">
-    <title>Algorithm derivation diagram</title>
-    <desc>Brute force leads to KD-tree, LSH, and NSW. LSH leads to IVF which leads to FAISS IVF and ScaNN. NSW leads to HNSW which leads to Glass and DiskANN. HNSW and FAISS IVF together inspire our Clustered HNSW. Ada-IVF inspires our reindexing strategy.</desc>
+  <svg width="100%" viewBox="0 0 680 400" role="img">
     <defs>
       <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
         <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
@@ -376,11 +336,11 @@ svg text { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-seri
     </defs>
 
     <!-- Gen labels -->
-    <text x="30" y="52"  font-size="10" fill="#999" font-family="sans-serif">Gen 1</text>
-    <text x="30" y="128" font-size="10" fill="#999" font-family="sans-serif">Gen 1</text>
-    <text x="30" y="208" font-size="10" fill="#999" font-family="sans-serif">Gen 2</text>
-    <text x="30" y="288" font-size="10" fill="#999" font-family="sans-serif">Gen 2/3</text>
-    <text x="30" y="380" font-size="10" fill="#999" font-family="sans-serif">Gen 4</text>
+    <text x="30" y="52"  font-size="10" fill="#999">Gen 1</text>
+    <text x="30" y="128" font-size="10" fill="#999">Gen 1</text>
+    <text x="30" y="208" font-size="10" fill="#999">Gen 2</text>
+    <text x="30" y="288" font-size="10" fill="#999">Gen 2/3</text>
+    <text x="30" y="370" font-size="10" fill="#999">Gen 4</text>
 
     <!-- Dividers -->
     <line x1="66" y1="78"  x2="650" y2="78"  stroke="#ddd" stroke-width="0.5" stroke-dasharray="2 3"/>
@@ -390,88 +350,78 @@ svg text { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-seri
 
     <!-- Brute force -->
     <rect x="255" y="30" width="170" height="36" rx="6" fill="#eee" stroke="#bbb" stroke-width="0.5"/>
-    <text x="340" y="52" font-size="12" font-weight="600" text-anchor="middle" font-family="sans-serif" fill="#333">Brute force</text>
+    <text x="340" y="52" font-size="12" font-weight="600" text-anchor="middle" fill="#333">Brute force</text>
 
-    <!-- Gen1 → KD-tree -->
+    <!-- KD-tree -->
     <line x1="310" y1="66" x2="155" y2="106" stroke="#bbb" stroke-width="1" marker-end="url(#arr)"/>
     <rect x="70" y="106" width="150" height="36" rx="6" fill="#eee" stroke="#bbb" stroke-width="0.5"/>
-    <text x="145" y="128" font-size="11" font-weight="600" text-anchor="middle" font-family="sans-serif" fill="#333">KD-tree [1]</text>
+    <text x="145" y="128" font-size="11" font-weight="600" text-anchor="middle" fill="#333">KD-tree [1]</text>
 
-    <!-- Gen1 → LSH -->
+    <!-- LSH -->
     <line x1="340" y1="66" x2="340" y2="106" stroke="#bbb" stroke-width="1" marker-end="url(#arr)"/>
     <rect x="255" y="106" width="170" height="36" rx="6" fill="#dbeafe" stroke="#93c5fd" stroke-width="0.5"/>
-    <text x="340" y="128" font-size="11" font-weight="600" text-anchor="middle" font-family="sans-serif" fill="#1e3a8a">LSH [3]</text>
+    <text x="340" y="128" font-size="11" font-weight="600" text-anchor="middle" fill="#1e3a8a">LSH [3]</text>
 
-    <!-- Gen1 → NSW -->
+    <!-- NSW -->
     <line x1="375" y1="66" x2="520" y2="106" stroke="#bbb" stroke-width="1" marker-end="url(#arr)"/>
     <rect x="445" y="106" width="150" height="36" rx="6" fill="#d1fae5" stroke="#6ee7b7" stroke-width="0.5"/>
-    <text x="520" y="128" font-size="11" font-weight="600" text-anchor="middle" font-family="sans-serif" fill="#065f46">NSW [8]</text>
+    <text x="520" y="128" font-size="11" font-weight="600" text-anchor="middle" fill="#065f46">NSW [8]</text>
 
-    <!-- LSH → IVF -->
+    <!-- IVF -->
     <line x1="320" y1="142" x2="200" y2="182" stroke="#bbb" stroke-width="1" marker-end="url(#arr)"/>
     <rect x="115" y="182" width="150" height="36" rx="6" fill="#dbeafe" stroke="#93c5fd" stroke-width="0.5"/>
-    <text x="190" y="204" font-size="11" font-weight="600" text-anchor="middle" font-family="sans-serif" fill="#1e3a8a">IVF [4]</text>
+    <text x="190" y="204" font-size="11" font-weight="600" text-anchor="middle" fill="#1e3a8a">IVF [4]</text>
 
-    <!-- IVF → FAISS IVF -->
+    <!-- FAISS IVF -->
     <line x1="190" y1="218" x2="190" y2="258" stroke="#bbb" stroke-width="1" marker-end="url(#arr)"/>
     <rect x="105" y="258" width="160" height="36" rx="6" fill="#dbeafe" stroke="#93c5fd" stroke-width="0.5"/>
-    <text x="185" y="280" font-size="11" font-weight="600" text-anchor="middle" font-family="sans-serif" fill="#1e3a8a">FAISS IVF [5]</text>
+    <text x="185" y="280" font-size="11" font-weight="600" text-anchor="middle" fill="#1e3a8a">FAISS IVF [5]</text>
 
-    <!-- FAISS IVF → ScaNN -->
+    <!-- ScaNN -->
     <line x1="165" y1="294" x2="130" y2="338" stroke="#bbb" stroke-width="1" marker-end="url(#arr)"/>
     <rect x="68" y="338" width="120" height="36" rx="6" fill="#dbeafe" stroke="#93c5fd" stroke-width="0.5"/>
-    <text x="128" y="360" font-size="11" font-weight="600" text-anchor="middle" font-family="sans-serif" fill="#1e3a8a">ScaNN [7]</text>
+    <text x="128" y="360" font-size="11" font-weight="600" text-anchor="middle" fill="#1e3a8a">ScaNN [7]</text>
 
-    <!-- NSW → HNSW -->
+    <!-- HNSW -->
     <line x1="520" y1="142" x2="520" y2="182" stroke="#bbb" stroke-width="1" marker-end="url(#arr)"/>
     <rect x="435" y="182" width="150" height="36" rx="6" fill="#d1fae5" stroke="#6ee7b7" stroke-width="0.5"/>
-    <text x="510" y="204" font-size="11" font-weight="600" text-anchor="middle" font-family="sans-serif" fill="#065f46">HNSW [9]</text>
+    <text x="510" y="204" font-size="11" font-weight="600" text-anchor="middle" fill="#065f46">HNSW [9]</text>
 
-    <!-- HNSW → Glass -->
+    <!-- Glass -->
     <line x1="495" y1="218" x2="460" y2="258" stroke="#bbb" stroke-width="1" marker-end="url(#arr)"/>
     <rect x="390" y="258" width="120" height="36" rx="6" fill="#d1fae5" stroke="#6ee7b7" stroke-width="0.5"/>
-    <text x="450" y="280" font-size="11" font-weight="600" text-anchor="middle" font-family="sans-serif" fill="#065f46">Glass [10]</text>
+    <text x="450" y="280" font-size="11" font-weight="600" text-anchor="middle" fill="#065f46">Glass [10]</text>
 
-    <!-- HNSW → DiskANN -->
+    <!-- DiskANN -->
     <line x1="540" y1="218" x2="565" y2="258" stroke="#bbb" stroke-width="1" marker-end="url(#arr)"/>
     <rect x="530" y="258" width="120" height="36" rx="6" fill="#d1fae5" stroke="#6ee7b7" stroke-width="0.5"/>
-    <text x="590" y="280" font-size="11" font-weight="600" text-anchor="middle" font-family="sans-serif" fill="#065f46">DiskANN [11]</text>
+    <text x="590" y="280" font-size="11" font-weight="600" text-anchor="middle" fill="#065f46">DiskANN [11]</text>
 
-    <!-- FAISS IVF + HNSW → Clustered HNSW (our work) orange arrows -->
-    <line x1="215" y1="294" x2="310" y2="358" stroke="#D85A30" stroke-width="2" marker-end="url(#arr)"/>
-    <text x="238" y="334" font-size="10" fill="#D85A30" font-family="sans-serif" font-style="italic">partitioning</text>
-    <line x1="500" y1="218" x2="410" y2="358" stroke="#D85A30" stroke-width="2" marker-end="url(#arr)"/>
-    <text x="468" y="296" font-size="10" fill="#D85A30" font-family="sans-serif" font-style="italic">graph/cluster</text>
+    <!-- Orange arrows to our work -->
+    <line x1="215" y1="294" x2="315" y2="348" stroke="#D85A30" stroke-width="2" marker-end="url(#arr)"/>
+    <text x="235" y="328" font-size="10" fill="#D85A30" font-style="italic">partitioning</text>
+    <line x1="500" y1="218" x2="415" y2="348" stroke="#D85A30" stroke-width="2" marker-end="url(#arr)"/>
+    <text x="468" y="290" font-size="10" fill="#D85A30" font-style="italic">graph/cluster</text>
 
-    <!-- Ada-IVF inspiration dashed -->
-    <rect x="555" y="338" width="95" height="36" rx="6" fill="#f5f5f5" stroke="#ccc" stroke-width="0.5" stroke-dasharray="3 2"/>
-    <text x="602" y="355" font-size="10" font-weight="600" text-anchor="middle" font-family="sans-serif" fill="#888">Ada-IVF [14]</text>
-    <text x="602" y="368" font-size="9" text-anchor="middle" font-family="sans-serif" fill="#aaa">Mohoney 2024</text>
-    <line x1="555" y1="356" x2="500" y2="374" stroke="#bbb" stroke-width="1" stroke-dasharray="3 2" marker-end="url(#arr)"/>
-    <text x="527" y="363" font-size="9" fill="#aaa" font-family="sans-serif" font-style="italic">inspires reindex</text>
-
-    <!-- Our work box -->
-    <rect x="300" y="348" width="220" height="52" rx="8" fill="#fff8e1" stroke="#D85A30" stroke-width="1.5"/>
-    <text x="410" y="368" font-size="12" font-weight="700" text-anchor="middle" font-family="sans-serif" fill="#8a4000">Clustered HNSW</text>
-    <text x="410" y="384" font-size="10" text-anchor="middle" font-family="sans-serif" fill="#b07000">[our work, 2024]  K=1000 clusters</text>
-    <text x="410" y="396" font-size="9" text-anchor="middle" font-family="sans-serif" fill="#888">build_indexes.cpp · search.cpp · dynamic_reindex.cpp</text>
+    <!-- Our work -->
+    <rect x="300" y="348" width="220" height="40" rx="8" fill="#fff8e1" stroke="#D85A30" stroke-width="1.5"/>
+    <text x="410" y="364" font-size="12" font-weight="700" text-anchor="middle" fill="#8a4000">Clustered HNSW</text>
+    <text x="410" y="381" font-size="10" text-anchor="middle" fill="#b07000">[our work]</text>
   </svg>
 
   <p class="fig-note">
     <b>Figure 4:</b> Derivation of ANN algorithms from brute force to Clustered HNSW.
     Black arrows show direct algorithmic lineage. Orange arrows show the two contributions
     our work combines: partitioning strategy from FAISS IVF [5] and graph search from HNSW [9].
-    Dashed arrow shows inspiration from Ada-IVF [14] for our local re-clustering strategy.
     [1] Bentley 1975 · [3] Indyk 1998 · [4] Jégou 2010 · [5] Johnson 2017 ·
-    [7] Guo 2020 · [8] Malkov 2011 · [9] Malkov 2016 · [10] Hy 2023 ·
-    [11] Jayaram 2019 · [14] Mohoney 2024
+    [7] Guo 2020 · [8] Malkov 2011 · [9] Malkov 2016 · [10] Hy 2023 · [11] Jayaram 2019
   </p>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════════ FIGURE 5 -->
 <div class="section" id="figure5">
   <p class="fig-title">Figure 5: Overview of ANN algorithms — per-phase complexity</p>
-  <p class="fig-sub">N=dataset size · d=dimensions · K=clusters · n=N/K (cluster size) · M=graph degree · ef=beam width · L=LSH tables</p>
+  <p class="fig-sub">N=dataset size · d=dimensions · K=clusters · n=N/K (cluster size) · M=graph degree · ef=beam width · L=LSH tables · T=TOP_CLUSTERS</p>
 
   <div style="overflow-x:auto;">
   <table>
@@ -489,57 +439,33 @@ svg text { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-seri
     <tbody>
       <tr class="gen1">
         <td>Brute force</td>
-        <td>O(1)</td>
-        <td>—</td>
-        <td>O(N·d)</td>
-        <td><b>O(N·d)</b></td>
-        <td>O(1)</td>
-        <td>O(N·d)</td>
+        <td>O(1)</td><td>—</td><td>O(N·d)</td>
+        <td><b>O(N·d)</b></td><td>O(1)</td><td>O(N·d)</td>
       </tr>
       <tr class="gen2">
         <td>LSH [3]</td>
-        <td>O(N·d·L)</td>
-        <td>O(L·d)</td>
-        <td>O(bucket·d)</td>
-        <td><b>O(L·d)</b></td>
-        <td>O(L·d)</td>
-        <td>O(N·L)</td>
+        <td>O(N·d·L)</td><td>O(L·d)</td><td>O(bucket·d)</td>
+        <td><b>O(L·d)</b></td><td>O(L·d)</td><td>O(N·L)</td>
       </tr>
       <tr class="gen2">
         <td>FAISS IVF [5]</td>
-        <td>O(N·K·d)</td>
-        <td>O(K·d)</td>
-        <td>O(n_probe·n·d)</td>
-        <td><b>O(K·d + np·n·d)</b></td>
-        <td>O(d)</td>
-        <td>O(N·d)</td>
+        <td>O(N·K·d)</td><td>O(K·d)</td><td>O(n_probe·n·d)</td>
+        <td><b>O(K·d + np·n·d)</b></td><td>O(d)</td><td>O(N·d)</td>
       </tr>
       <tr class="gen3">
         <td>NSW [8]</td>
-        <td>O(N·M·d)</td>
-        <td>greedy 1-layer</td>
-        <td>O(ef·M·d)</td>
-        <td><b>O(ef·M·d)</b></td>
-        <td>O(M·d)</td>
-        <td>O(N·M)</td>
+        <td>O(N·M·d)</td><td>greedy 1-layer</td><td>O(ef·M·d)</td>
+        <td><b>O(ef·M·d)</b></td><td>O(M·d)</td><td>O(N·M)</td>
       </tr>
       <tr class="gen3">
         <td>HNSW [9]</td>
-        <td>O(N·M·d·log N)</td>
-        <td>greedy layers</td>
-        <td>O(ef·M·d)</td>
-        <td><b>O(ef·M·d·log N)</b></td>
-        <td>O(M·d·log N)</td>
-        <td>O(N·M)</td>
+        <td>O(N·M·d·log N)</td><td>greedy layers</td><td>O(ef·M·d)</td>
+        <td><b>O(ef·M·d·log N)</b></td><td>O(M·d·log N)</td><td>O(N·M)</td>
       </tr>
       <tr class="gen3">
         <td>DiskANN [11]</td>
-        <td>O(N·M·d·log N)</td>
-        <td>disk reads</td>
-        <td>O(ef·M·d)</td>
-        <td><b>O(ef·M·d·log N)</b></td>
-        <td>O(M·d)</td>
-        <td>O(N) disk</td>
+        <td>O(N·M·d·log N)</td><td>disk reads</td><td>O(ef·M·d)</td>
+        <td><b>O(ef·M·d·log N)</b></td><td>O(M·d)</td><td>O(N) disk</td>
       </tr>
       <tr class="gen4">
         <td><b>Clustered HNSW</b> <span class="ours">[ours]</span></td>
@@ -554,28 +480,10 @@ svg text { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-seri
   </table>
   </div>
 
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px;">
-    <div style="background:#f8f8f6;border-radius:6px;padding:12px;font-size:11.5px;line-height:1.8">
-      <b>Why clustered build is faster:</b><br>
-      HNSW: O(N·M·d·log N) — one large graph<br>
-      Ours: O(K·n·M·d·log n) where N = K·n<br>
-      = O(N·M·d·log(N/K))<br>
-      K=1000, N=1M → log N=20, log n=10<br>
-      → <b>~2× faster per vector</b>, confirmed: 1013s → 66s
-    </div>
-    <div style="background:#f8f8f6;border-radius:6px;padding:12px;font-size:11.5px;line-height:1.8">
-      <b>Query routing overhead:</b><br>
-      Extra cost vs HNSW: O(K·d) centroid scan<br>
-      K=1000, d=128 → 128,000 extra ops/query<br>
-      T=TOP_CLUSTERS controls recall/speed<br>
-      T=1 → fastest, T=20 → matches baseline recall
-    </div>
-  </div>
-
   <p class="fig-note">
-    <b>Variables:</b> N=1,000,000 · d=128 · K=1000 · n≈1000 · M=16 · ef=50 · T=TOP_CLUSTERS.
-    Build: O(N·M·d·log N) for full HNSW vs O(N·M·d·log n) for clustered, where log n = log(N/K).
-    Insert: O(d) centroid lookup + O(M·d) HNSW insert = cheaper than full HNSW O(M·d·log N).
+    <b>Figure 5:</b> Per-phase complexity comparison. Our build cost O(K·n·M·d·log n) = O(N·M·d·log(N/K))
+    is lower than full HNSW O(N·M·d·log N) when K &gt; 1. Insert cost is O(d) centroid lookup +
+    O(M·d) local HNSW insert, cheaper than full HNSW O(M·d·log N). T controls the recall/speed tradeoff.
     [3] Indyk 1998 · [5] Johnson 2017 · [8] Malkov 2011 · [9] Malkov 2016 · [11] Jayaram 2019
   </p>
 </div>
@@ -583,17 +491,15 @@ svg text { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-seri
 <!-- ═══════════════════════════════════════════════════════════ FIGURE 6 -->
 <div class="section" id="figure6">
   <p class="fig-title">Figure 6: Recall vs QPS on SIFT1M — our method vs existing work</p>
-  <p class="fig-sub">Higher right = better. Each point = one parameter configuration. QPS on log scale. Mac hardware (single thread).</p>
-  <div style="position:relative;height:360px;">
-    <canvas id="recallChart"></canvas>
+  <p class="fig-sub">Higher right = better. Each point = one parameter configuration. QPS on log scale.</p>
+
+  <div class="placeholder-chart">
+    Results pending experiments — chart will be populated after benchmarking on SIFT1M
   </div>
+
   <p class="fig-note">
-    <b>Figure 6:</b> Recall@1 vs QPS on SIFT1M (1M×128, Euclidean distance).
-    ANN-benchmarks reference (gray) shows hnswlib on a Linux server — QPS difference is hardware, not algorithm.
-    Our clustered approach at TOP=1 achieves 34% higher QPS than baseline HNSW at lower recall.
-    At TOP=20 our method matches baseline recall (0.9689 vs 0.9686) while searching only 2% of vectors.
-    FAISS IVF achieves higher QPS due to flat scan advantage at small cluster sizes (~1000 vectors).
-    Build time: FAISS IVF=2.11s, Clustered HNSW=66s, Baseline HNSW=1013s.
+    <b>Figure 6:</b> Recall@1 vs QPS on SIFT1M (1M × 128-d, Euclidean distance).
+    Baselines will include HNSW, FAISS IVF, and ANN-benchmarks reference curves.
     Dataset: SIFT-128-Euclidean [D1]. Framework: ANN-Benchmarks [C1].
     [D1] Jégou et al. 2010 · [C1] Aumüller et al. 2019
   </p>
@@ -610,90 +516,22 @@ svg text { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-seri
     <p><b>[5]</b> J. Johnson, M. Douze, H. Jégou: Billion-Scale Similarity Search with GPUs. IEEE Big Data, 2017. arXiv:1702.08734</p>
     <p><b>[6]</b> E. Bernhardsson: Annoy — Approximate Nearest Neighbors Oh Yeah. GitHub, 2013. github.com/spotify/annoy</p>
     <p><b>[7]</b> R. Guo et al.: Accelerating Large-Scale Inference with Anisotropic Vector Quantization (ScaNN). ICML, 2020. arXiv:1908.10396</p>
-    <p><b>[8]</b> Y. Malkov, A. Ponomarenko, A. Logvinov, V. Krylov: Approximate Nearest Neighbor Algorithm Based on Navigable Small World Graphs. Information Systems, 2014. DOI: 10.1016/j.is.2013.10.006</p>
+    <p><b>[8]</b> Y. Malkov et al.: Approximate Nearest Neighbor Algorithm Based on Navigable Small World Graphs. Information Systems, 2014. DOI: 10.1016/j.is.2013.10.006</p>
     <p><b>[9]</b> Y. Malkov, D. Yashunin: Efficient and Robust Approximate Nearest Neighbor Search Using Hierarchical Navigable Small World Graphs. IEEE TPAMI, 2020. arXiv:1603.09320</p>
     <p><b>[10]</b> H. Hy: Glass — Graph-based Approximate Nearest Neighbor Search. GitHub, 2023. github.com/hhy3/pyglass</p>
     <p><b>[11]</b> S. Jayaram Subramanya et al.: DiskANN: Fast Accurate Billion-point Nearest Neighbor Search on a Single Node. NeurIPS, 2019.</p>
     <p><b>[12]</b> M. Iwasaki, D. Miyazaki: Optimization of Indexing Based on k-Nearest Neighbor Graph for Proximity Search in High-dimensional Data. arXiv:1810.07355, 2018.</p>
     <p><b>[13]</b> L. McInnes: PyNNDescent. GitHub, 2018. github.com/lmcinnes/pynndescent</p>
-    <p><b>[14]</b> J. Mohoney et al.: Incremental IVF Index Maintenance for Streaming Vector Search (Ada-IVF). arXiv:2411.00970, 2024.</p>
     <p><b>[C1]</b> M. Aumüller, E. Bernhardsson, A. Faithfull: ANN-Benchmarks: A Benchmarking Tool for Approximate Nearest Neighbor Algorithms. Information Systems, 2019. DOI: 10.1016/j.is.2019.02.006</p>
     <p><b>[C2]</b> H. Simhadri et al.: Results of the NeurIPS'21 Challenge on Billion-Scale ANN Search. arXiv:2205.03763</p>
     <p><b>[C3]</b> Y. Xu et al.: SPFresh: Incremental In-Place Update for Billion-Scale Vector Search. SOSP, 2023.</p>
     <p><b>[C4]</b> D. Baranchuk et al.: DeDrift: Robust Similarity Search under Content Drift. arXiv:2308.02752, 2023.</p>
     <p><b>[D1]</b> H. Jégou, M. Douze, C. Schmid: Product Quantization for Nearest Neighbor Search. IEEE TPAMI, 2011. DOI: 10.1109/TPAMI.2010.57 — SIFT1M dataset</p>
-    <p><b>[D2]</b> J. Pennington, R. Socher, C. Manning: GloVe: Global Vectors for Word Representation. EMNLP, 2014. — GloVe dataset</p>
-    <p><b>[D3]</b> H. Xiao, K. Rasul, R. Vollgraf: Fashion-MNIST. arXiv:1708.07747 — Fashion-MNIST dataset</p>
+    <p><b>[D2]</b> J. Pennington, R. Socher, C. Manning: GloVe: Global Vectors for Word Representation. EMNLP, 2014.</p>
+    <p><b>[D3]</b> H. Xiao, K. Rasul, R. Vollgraf: Fashion-MNIST. arXiv:1708.07747</p>
     <p><b>[S1]</b> S.P. Lloyd: Least Squares Quantization in PCM. IEEE TIT, 1982. DOI: 10.1109/TIT.1982.1056489 — K-Means algorithm</p>
   </div>
 </div>
 
-<script>
-new Chart(document.getElementById('recallChart'), {
-  type: 'scatter',
-  data: {
-    datasets: [
-      {
-        label: 'ANN-benchmarks hnswlib (server)',
-        data: [
-          {x:0.713, y:69662, label:'hnswlib ef=10'},
-          {x:0.950, y:28021, label:'hnswlib ef=50'},
-          {x:0.985, y:16108, label:'hnswlib ef=100'},
-          {x:1.000, y:4115,  label:'hnswlib ef=500'},
-        ],
-        backgroundColor:'#888', borderColor:'#888',
-        pointRadius:6, showLine:true, borderWidth:1.5,
-      },
-      {
-        label: 'FAISS IVF (our measurement)',
-        data: [
-          {x:0.4303, y:357193, label:'FAISS IVF nprobe=1'},
-          {x:0.8095, y:84135,  label:'FAISS IVF nprobe=5'},
-          {x:0.9128, y:43165,  label:'FAISS IVF nprobe=10'},
-          {x:0.9716, y:22767,  label:'FAISS IVF nprobe=20'},
-          {x:0.9961, y:9254,   label:'FAISS IVF nprobe=50'},
-        ],
-        backgroundColor:'#185FA5', borderColor:'#185FA5',
-        pointRadius:5, showLine:true, borderWidth:1.5, borderDash:[4,3],
-      },
-      {
-        label: 'Baseline HNSW (our measurement)',
-        data: [{x:0.9686, y:7443, label:'Baseline HNSW ef=50'}],
-        backgroundColor:'#0F6E56', borderColor:'#0F6E56',
-        pointRadius:10, pointStyle:'star',
-      },
-      {
-        label: 'Clustered HNSW — our work',
-        data: [
-          {x:0.4359, y:9785,  label:'TOP=1'},
-          {x:0.6977, y:5301,  label:'TOP=3'},
-          {x:0.8062, y:3603,  label:'TOP=5'},
-          {x:0.9117, y:1998,  label:'TOP=10'},
-          {x:0.9689, y:1056,  label:'TOP=20'},
-          {x:0.9960, y:435,   label:'TOP=50'},
-        ],
-        backgroundColor:'#D85A30', borderColor:'#D85A30',
-        pointRadius:7, showLine:true, borderWidth:2,
-      },
-    ]
-  },
-  options: {
-    responsive:true, maintainAspectRatio:false,
-    plugins: {
-      legend:{ position:'bottom', labels:{ boxWidth:12, font:{size:11} } },
-      tooltip:{ callbacks:{
-        label: ctx => {
-          const d = ctx.raw;
-          return [`${d.label||''}`, `Recall: ${d.x.toFixed(4)}`, `QPS: ${d.y.toLocaleString()}`];
-        }
-      }}
-    },
-    scales:{
-      x:{ title:{display:true,text:'Recall@1',font:{size:12}}, min:0.3, max:1.05, ticks:{callback:v=>v.toFixed(2)} },
-      y:{ type:'logarithmic', title:{display:true,text:'QPS (log scale)',font:{size:12}}, ticks:{callback:v=>v.toLocaleString()} }
-    }
-  }
-});
-</script>
 </body>
 </html>
