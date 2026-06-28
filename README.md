@@ -20,18 +20,12 @@ The interactive visualization below provides a high-level overview of the comple
 
 | # | Question | Theme |
 |---|---|---|
-| RQ1 | **RQ1:** Can centroid-based partitioning improve query throughput while maintaining recall comparable to state-of-the-art vector search indexes over large-scale datasets?
- | **Efficiency** |
-| RQ2 | Can centroid-based partitioning improve query throughput while maintaining high recall across datasets with different levels of attribute availability? 
-| **Impact of Attribute Availability on Hybrid Vector Search** |
-| RQ3 | As new vectors are continuously inserted into HyVec, how quickly do Recall@1 and QPS degrade when the original cluster centroids are not updated? 
-| **Online Insertion Without Re-Clustering** |
-| RQ4 | Can background re-clustering with atomic index swapping recover Recall@1 and QPS after online insertions while minimizing query interruption, and what is the maintenance overhead? 
-| **Background Re-Clustering and Atomic Index Swapping** |
-| RQ5 | Does HyVec’s clustered search scale more efficiently than a standard unpartitioned HNSW index as dataset size increases? 
-| **Scalability with Dataset Growth** |
-| RQ6 | Does attribute-based clustering improve the explainability of vector search by enabling query routing analysis, cluster-level performance diagnosis, and latency prediction? 
-| **Understandability** |
+| RQ1 | **RQ1:** Can centroid-based partitioning improve query throughput while maintaining recall comparable to state-of-the-art vector search indexes over large-scale datasets? | **Efficiency** |
+| RQ2 | Can centroid-based partitioning improve query throughput while maintaining high recall across datasets with different levels of attribute availability? | **Impact of Attribute Availability on Hybrid Vector Search** |
+| RQ3 | As new vectors are continuously inserted into HyVec, how quickly do Recall@1 and QPS degrade when the original cluster centroids are not updated? | **Online Insertion Without Re-Clustering** |
+| RQ4 | Can background re-clustering with atomic index swapping recover Recall@1 and QPS after online insertions while minimizing query interruption, and what is the maintenance overhead? | **Background Re-Clustering and Atomic Index Swapping** |
+| RQ5 | Does HyVec’s clustered search scale more efficiently than a standard unpartitioned HNSW index as dataset size increases? | **Scalability with Dataset Growth** |
+| RQ6 | Does attribute-based clustering improve the explainability of vector search by enabling query routing analysis, cluster-level performance diagnosis, and latency prediction? | **Understandability** |
 ---
 
 ## Partitioning Strategies
