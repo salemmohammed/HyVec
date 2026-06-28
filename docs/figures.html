@@ -4,9 +4,16 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ANN Algorithm Figures — Real-Time Hybrid Clustered Vector Search</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <style>
-* { box-sizing: border-box; margin: 0; padding: 0; }
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   background: #f8f8f6;
@@ -16,8 +23,80 @@ body {
   margin: 0 auto;
   line-height: 1.6;
 }
-h1 { font-size: 20px; font-weight: 600; margin-bottom: 4px; }
-.subtitle { font-size: 13px; color: #666; margin-bottom: 8px; }
+
+/* =========================================================
+   Header
+========================================================= */
+
+header {
+  background: #fff;
+  border: 1px solid #e5e5e5;
+  border-radius: 10px;
+  padding: 18px 24px;
+  margin-bottom: 20px;
+
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.header-left h1 {
+  font-size: 22px;
+  font-weight: 700;
+  margin: 0 0 4px;
+}
+
+.header-left p {
+  font-size: 13px;
+  color: #666;
+  margin: 0;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.gh-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+
+  padding: 8px 14px;
+
+  border: 1px solid #ddd;
+  border-radius: 8px;
+
+  background: #fff;
+  color: #333;
+
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 500;
+
+  transition: all .2s ease;
+}
+
+.gh-link:hover {
+  background: #f5f5f5;
+  border-color: #bbb;
+}
+
+/* =========================================================
+   Existing page styles
+========================================================= */
+
+.subtitle {
+  font-size: 13px;
+  color: #666;
+  margin-bottom: 20px;
+}
+
 .cite-block {
   background: #f0ede8;
   border-left: 3px solid #888;
@@ -28,6 +107,7 @@ h1 { font-size: 20px; font-weight: 600; margin-bottom: 4px; }
   margin-bottom: 32px;
   line-height: 1.7;
 }
+
 .section {
   background: white;
   border-radius: 10px;
@@ -35,18 +115,21 @@ h1 { font-size: 20px; font-weight: 600; margin-bottom: 4px; }
   padding: 28px;
   margin-bottom: 32px;
 }
+
 .fig-title {
   font-size: 14px;
   font-weight: 600;
   text-align: center;
   margin-bottom: 4px;
 }
+
 .fig-sub {
   font-size: 12px;
   color: #666;
   text-align: center;
   margin-bottom: 18px;
 }
+
 .fig-note {
   font-size: 11.5px;
   color: #555;
@@ -55,19 +138,23 @@ h1 { font-size: 20px; font-weight: 600; margin-bottom: 4px; }
   border-top: 1px solid #eee;
   padding-top: 12px;
 }
-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
 th {
   text-align: center;
   padding: 8px 6px;
   border-bottom: 1.5px solid #333;
-  font-weight: 600;
-  color: #333;
   background: #fafafa;
+  font-weight: 600;
   font-size: 11px;
-  vertical-align: bottom;
-  white-space: nowrap;
 }
-th:first-child { text-align: left; }
+
+
 th .abbr {
   display: block;
   font-size: 9px;
@@ -75,82 +162,190 @@ th .abbr {
   color: #888;
   margin-top: 2px;
 }
+
 td {
   text-align: center;
-  padding: 6px 6px;
-  border-bottom: 0.5px solid #eee;
+  padding: 6px;
+  border-bottom: .5px solid #eee;
   font-size: 11.5px;
 }
-td:first-child { text-align: left; font-weight: 500; }
-tr:hover td { background: #fafafa; }
+
+td:first-child,
+th:first-child {
+  text-align: left;
+}
+
+tr:hover td {
+  background: #fafafa;
+}
+
 .gen1 td { background: #f5f5f5; }
 .gen2 td { background: #eef4ff; }
 .gen3 td { background: #eefaf5; }
-.gen4 td { background: #fff8e1; font-weight: 500; }
-.ours  { color: #8a5c00; font-weight: 700; }
-.check { color: #1a7a4a; font-weight: 700; }
-.dash  { color: #aaa; }
-.xxx   { color: #bbb; font-style: italic; }
+.gen4 td {
+  background: #fff8e1;
+  font-weight: 500;
+}
+
+.ours {
+  color: #8a5c00;
+  font-weight: 700;
+}
+
+.check {
+  color: #1a7a4a;
+  font-weight: 700;
+}
+
+.dash {
+  color: #aaa;
+}
+
+.xxx {
+  color: #bbb;
+  font-style: italic;
+}
+
 .placeholder-chart {
   display: flex;
-  align-items: center;
   justify-content: center;
+  align-items: center;
   height: 320px;
   border: 2px dashed #ddd;
   border-radius: 8px;
-  color: #aaa;
-  font-size: 13px;
   background: #fafafa;
+  color: #999;
 }
+
 .refs {
-  font-size: 11.5px;
-  color: #444;
-  line-height: 1.9;
   columns: 2;
   column-gap: 32px;
+  font-size: 11.5px;
+  line-height: 1.9;
 }
-.refs b { color: #1a1a1a; }
+
 .nav {
   display: flex;
   gap: 12px;
-  margin-bottom: 28px;
   flex-wrap: wrap;
+  margin-bottom: 28px;
 }
+
 .nav a {
-  font-size: 13px;
-  padding: 6px 14px;
+  text-decoration: none;
+  color: #333;
   background: white;
   border: 1px solid #e5e5e5;
   border-radius: 6px;
-  color: #333;
-  text-decoration: none;
+  padding: 6px 14px;
+  font-size: 13px;
 }
-.nav a:hover { background: #f5f5f5; }
-svg text { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+
+.nav a:hover {
+  background: #f5f5f5;
+}
+
+/* =========================================================
+   Dark mode
+========================================================= */
+
 @media (prefers-color-scheme: dark) {
-  body { background: #1a1a1a; color: #e5e5e5; }
-  .section { background: #242424; border-color: #333; }
-  th { background: #2a2a2a; color: #ccc; border-bottom-color: #555; }
-  td { border-bottom-color: #2f2f2f; }
-  tr:hover td { background: #2a2a2a; }
+
+  body {
+    background: #1a1a1a;
+    color: #e5e5e5;
+  }
+
+  header,
+  .section {
+    background: #242424;
+    border-color: #333;
+  }
+
+  .header-left p,
+  .subtitle,
+  .fig-sub,
+  .fig-note {
+    color: #aaa;
+  }
+
+  .gh-link,
+  .nav a {
+    background: #242424;
+    color: #ddd;
+    border-color: #444;
+  }
+
+  .gh-link:hover,
+  .nav a:hover {
+    background: #2d2d2d;
+  }
+
+  th {
+    background: #2a2a2a;
+    border-bottom-color: #555;
+  }
+
+  td {
+    border-bottom-color: #333;
+  }
+
+  tr:hover td {
+    background: #2a2a2a;
+  }
+
   .gen1 td { background: #252525; }
   .gen2 td { background: #1e2535; }
   .gen3 td { background: #1a2820; }
   .gen4 td { background: #2a2000; }
-  .nav a { background: #242424; border-color: #333; color: #ccc; }
-  .nav a:hover { background: #2a2a2a; }
-  .cite-block { background: #2a2a2a; border-color: #555; color: #aaa; }
-  .fig-note { color: #888; border-top-color: #333; }
-  .refs { color: #888; }
-  .refs b { color: #ccc; }
-  .placeholder-chart { border-color: #444; background: #1e1e1e; color: #666; }
+
+  .cite-block {
+    background: #2a2a2a;
+    border-color: #555;
+    color: #aaa;
+  }
+
+  .placeholder-chart {
+    background: #1e1e1e;
+    border-color: #444;
+    color: #666;
+  }
+
+  .refs {
+    color: #aaa;
+  }
 }
 </style>
 </head>
 <body>
 
-<h1>Real-Time Hybrid Clustered Vector Search</h1>
-<p class="subtitle">Salem Alqahtani, Adeel Aslam, Khaled Mahmoud</p>
+<header>
+  <div class="header-left">
+    <h1>Real-Time Hybrid Clustered Vector Search</h1>
+    <p><strong>Salem Alqahtani, Adeel Aslam, Khaled Mahmoud</strong></p>
+    <p>Experimental figures and algorithm comparison</p>
+  </div>
+
+  <div class="header-right">
+    <a class="gh-link" href="index.html">
+      <i class="ti ti-arrow-left"></i>
+      Interactive Pipeline
+    </a>
+
+    <a class="gh-link" href="#references">
+      <i class="ti ti-book"></i>
+      References
+    </a>
+
+    <a class="gh-link"
+       href="https://github.com/salemmohammed/my-vector-search"
+       target="_blank"
+       rel="noopener">
+      <i class="ti ti-brand-github"></i>
+      View on GitHub
+    </a>
+  </div>
+</header>
 
 <div class="cite-block">
   <b>Primary benchmark citation:</b><br>

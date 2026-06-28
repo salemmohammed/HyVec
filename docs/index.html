@@ -305,10 +305,20 @@
     <p>An interactive breakdown of every stage — from query to top-k results</p>
   </div>
   <div class="header-right">
-    <a class="gh-link" href="https://github.com/salemmohammed/my-vector-search" target="_blank" rel="noopener">
-      <i class="ti ti-brand-github"></i> View on GitHub
+    <a class="gh-link"
+       href="https://github.com/salemmohammed/my-vector-search"
+       target="_blank"
+       rel="noopener">
+        <i class="ti ti-brand-github"></i>
+        View on GitHub
+    </a>
+
+    <a class="gh-link" href="figures.html">
+        <i class="ti ti-chart-bar"></i>
+        Figures
     </a>
   </div>
+
 </header>
 <main>
   <div class="intro">
@@ -434,7 +444,7 @@ Example:
     ]
   },
   {
-    badge: "Step 2",s
+    badge: "Step 2",
     title: "Distance metric — what does 'close' mean in 384 dimensions?",
     what: `Once you have two vectors (query and a stored document), you need a formula to measure how similar they are. The choice of metric affects both accuracy and speed, and must be set at index creation time — you can't change it later without rebuilding the index.`,
     howLabel: "The three most common metrics:",

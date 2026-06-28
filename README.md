@@ -1,7 +1,10 @@
-# Real-Time Hybrid Clustered Vector Search
+# HyVec: An Online Hybrid Vector Search Engine for Approximate Nearest Neighbor Search
 
-## Clustered Attributed Vector Search
-We partition the base dataset into K spatial clusters [16] using MiniBatchKMeans. Each partion will store one centroid per cluster. At query time, the query vector is compared against all centroids to identify the nearest clusters. This is the routing step, inspired by IVF in FAISS [2]. Rather than scanning the full 1M vectors, only the vectors within the top K clusters are searched. Within each cluster, we build an independent HNSW index [1], a hierarchical graph where each vector is connected to its nearest neighbors across multiple layers. Search traverses this graph greedily, moving layer by layer toward the query vector. This replaces the flat exhaustive scan used in standard IVF, giving higher recall at the same cluster probe budget.
+## Clustered Attribute-Based Vector Search
+
+In this project, we employ a hybrid partitioning strategy that combines attribute-based filtering with spatial clustering. The dataset is first partitioned according to its metadata attributes. Since vectors sharing the same attribute may be distributed across different regions of the embedding space, each attribute partition is further divided into multiple spatial clusters using MiniBatch K-Means[16]. Each cluster is represented by a centroid, which is stored for query routing.
+
+An independent HNSW index [1] is then constructed for every final spatial cluster. At query time, the query is first filtered using its attribute, limiting the search to the relevant attribute partition. The query vector is then compared with the centroids of all clusters within that partition, and the nearest nprobe clusters are selected using an IVF-inspired routing strategy[2]. Instead of searching all vectors associated with the attribute, only the HNSW indices of the selected clusters are traversed. Each HNSW graph performs greedy hierarchical search to efficiently identify approximate nearest neighbors. Finally, the candidate results from all searched clusters are merged and ranked by similarity, and the top-k nearest neighbors are returned.
 
 ---
 
@@ -17,12 +20,18 @@ The interactive visualization below provides a high-level overview of the comple
 
 | # | Question | Theme |
 |---|---|---|
-| RQ1 | Can representing each partition of a million-scale vector dataset by a centroid vector, and routing queries to the nearest partition, improve query throughput while preserving recall@1 ≥ 0.95 (At least 95% of queries return the true nearest neighbor as the first result) compared to searching the full unpartitioned dataset? | **Efficiency** |
-| RQ2 | When a vector dataset has complete attributes, partial attributes, no attributes, imbalanced clusters, or spatially overlapping clusters, which partitioning strategy preserves the best recall@1 and QPS, and what are the tradeoffs? | **Partitioning Strategy Under Varying Attribute Conditions** |
-| RQ3 | As new vectors are continuously inserted into a live index, how does recall and QPS degrade over time without re-clustering, and what is the degradation rate relative to insertion volume? | **Real-Time Degradation** |
-| RQ4 | Can background re-clustering with atomic index swapping fully restore recall and QPS to pre-insertion levels with zero query interruption, and what is the measurable cost of re-clustering itself? | **Real-Time Recovery** |
-| RQ5 | Does the clustered approach scale sub-linearly with dataset growth compared to standard HNSW, and at what dataset size does clustering yield the greatest benefit? | **Scalability** |
-| RQ6 | Does attribute based clustering make vector search more understandable than monolithic HNSW by enabling three capabilities that standard HNSW cannot provide: (1) tracing exactly which cluster a query was routed to, (2) identifying which individual cluster is causing recall degradation, and (3) predicting worst-case query latency from cluster size alone without running the full system? | **Understandability** |
+| RQ1 | **RQ1:** Can centroid-based partitioning improve query throughput while maintaining recall comparable to state-of-the-art vector search indexes over large-scale datasets?
+ | **Efficiency** |
+| RQ2 | Can centroid-based partitioning improve query throughput while maintaining high recall across datasets with different levels of attribute availability? 
+| **Impact of Attribute Availability on Hybrid Vector Search** |
+| RQ3 | As new vectors are continuously inserted into HyVec, how quickly do Recall@1 and QPS degrade when the original cluster centroids are not updated? 
+| **Online Insertion Without Re-Clustering** |
+| RQ4 | Can background re-clustering with atomic index swapping recover Recall@1 and QPS after online insertions while minimizing query interruption, and what is the maintenance overhead? 
+| **Background Re-Clustering and Atomic Index Swapping** |
+| RQ5 | Does HyVec’s clustered search scale more efficiently than a standard unpartitioned HNSW index as dataset size increases? 
+| **Scalability with Dataset Growth** |
+| RQ6 | Does attribute-based clustering improve the explainability of vector search by enabling query routing analysis, cluster-level performance diagnosis, and latency prediction? 
+| **Understandability** |
 ---
 
 ## Partitioning Strategies
