@@ -50,7 +50,6 @@ Random partitioning assigns vectors to partitions without considering either met
 ### No Partitioning
 
 Without partitioning, all vectors are stored in a single index, and every query searches the complete dataset. This approach eliminates routing errors and partition-induced recall loss, thereby achieving the highest possible search accuracy. However, its computational cost increases with dataset size, making exhaustive search impractical for large-scale vector databases despite its optimal recall [2].
----
 
 ## Core Idea
 
