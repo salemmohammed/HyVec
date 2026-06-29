@@ -30,15 +30,14 @@ The interactive visualization below provides a high-level overview of the comple
 
 ## Partitioning Strategies
 
-Partitioning reduces the search space by dividing a large vector dataset into smaller subsets. Instead of searching the entire dataset, the system first identifies the most relevant partition(s) and then performs similarity search within those partitions. Different partitioning strategies provide different tradeoffs between search accuracy (Recall@1) and query throughput (QPS).
+Partitioning is a fundamental technique for improving the scalability of vector search by dividing a large dataset into smaller, manageable subsets. Rather than searching every vector, the query is first routed to one or more relevant partitions, and similarity search is performed only within those partitions. By reducing the search space, partitioning significantly improves query throughput (QPS) while maintaining high search accuracy. However, searching too few partitions may reduce Recall@1, creating a tradeoff between efficiency and accuracy [1], [2].
 
 ### Attribute-Based Partitioning
 
-Vectors are grouped according to metadata attributes such as category, location, document type, or tenant identifier. This strategy can significantly reduce the search space when complete and reliable attributes are available. However, its effectiveness decreases when attributes are missing, incomplete, or noisy [14].
-
+Attribute-based partitioning organizes vectors according to metadata such as category, document type, geographic region, user identifier, or tenant identifier. During query processing, metadata filters identify the relevant partitions before vector similarity search is executed. This approach is particularly effective when metadata is complete, accurate, and highly selective, but its performance deteriorates when attributes are missing, inconsistent, or poorly correlated with vector similarity [17].
 ### Spatial Partitioning
 
-Vectors are grouped according to their positions in the embedding space using clustering algorithms such as K-Means or MiniBatchKMeans. Queries are first routed to the nearest cluster centroids, and similarity search is then performed within the selected clusters. This approach forms the foundation of Inverted File (IVF) indexing and is widely used in large-scale vector search systems [15,3].
+Spatial partitioning organizes vectors according to their positions in the embedding space using clustering algorithms such as K-Means or MiniBatchKMeans. During query processing, the query vector is assigned to the nearest cluster centroid(s), and similarity search is performed only within those clusters. This approach forms the basis of the Inverted File (IVF) index and is one of the most widely adopted partitioning techniques in modern vector databases because it substantially reduces search complexity while preserving high recall [2], [3].
 
 ### Hybrid Partitioning
 
@@ -46,17 +45,16 @@ Hybrid partitioning combines metadata-based filtering with spatial clustering. T
 
 ### Random Partitioning
 
-Vectors are assigned randomly to partitions. Although this approach provides balanced partition sizes and serves as a useful experimental baseline, it does not preserve vector locality and generally leads to lower search efficiency and recall compared to similarity-aware partitioning methods.
+Random partitioning assigns vectors to partitions without considering either metadata or vector similarity. Although this strategy generally produces balanced partition sizes and serves as a useful experimental baseline, it does not preserve spatial locality. Consequently, nearest neighbors are often distributed across multiple partitions, requiring additional searches and typically resulting in lower recall and reduced search efficiency than similarity-aware partitioning methods [9].
 
 ### No Partitioning
 
-All vectors are stored in a single index, and every query searches the entire dataset. While this approach avoids partition-induced recall loss, it becomes increasingly expensive as dataset size grows.
-
+Without partitioning, all vectors are stored in a single index, and every query searches the complete dataset. This approach eliminates routing errors and partition-induced recall loss, thereby achieving the highest possible search accuracy. However, its computational cost increases with dataset size, making exhaustive search impractical for large-scale vector databases despite its optimal recall [2].
 ---
 
 ## Core Idea
 
-Standard HNSW traverses a subset of the full graph on every query, but that graph still contains all 1,000,000 vectors, causing the search space to grow as the dataset scales. This project partitions vectors into attribute-based clusters, allowing each query to be routed to a single small cluster before HNSW search is performed. As a result, the search space remains bounded and largely independent of the total dataset size.
+Standard HNSW traverses a subset of the full graph on every query, but that graph still contains all 1M vectors, causing the search space to grow as the dataset scales. This project partitions vectors into attribute-based clusters, allowing each query to be routed to a single small cluster before HNSW search is performed. As a result, the search space remains bounded and largely independent of the total dataset size.
 
 A key advantage of this design is support for real-time updates. New vectors can be inserted directly into their corresponding clusters without rebuilding a global index, enabling the system to maintain low-latency search performance while continuously ingesting new data.
 
@@ -449,6 +447,8 @@ This project is positioned within a growing body of research on **filtered and p
 [15] J. Sivic and A. Zisserman, "Video Google: A Text Retrieval Approach to Object Matching in Videos," *Proceedings of the IEEE International Conference on Computer Vision (ICCV)*, 2003.
 
 [16] D. Sculley, "Web-Scale K-Means Clustering," in *Proceedings of the 19th International Conference on World Wide Web (WWW)*, Raleigh, NC, USA, 2010, pp. 1177–1178, doi: 10.1145/1772690.1772862.
+
+[17] Y. Lin, K. Zhang, Z. He, Y. Jing, and X. S. Wang, "Survey of Filtered Approximate Nearest Neighbor Search over the Vector-Scalar Hybrid Data," arXiv preprint arXiv:2505.06501, 2025.
 
 ---
 
