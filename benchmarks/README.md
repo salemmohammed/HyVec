@@ -1,47 +1,58 @@
 # Benchmarks
 
-This benchmark evaluates our clustered HNSW system against standard ANN algorithms including hnswlib, FAISS-IVF, ScaNN, and Annoy by rerunning the ANN-Benchmarks framework to produce comparable results on the same hardware. We evaluate on two datasets: SIFT1M as a standard public benchmark, and our own attributed dataset to validate hybrid search performance.
+This directory contains the benchmarking framework used to evaluate the proposed **Hybrid Attribute-Spatial HNSW** index against representative **Approximate Nearest Neighbor (ANN)** indexing techniques. The benchmark is built on the **ANN-Benchmarks** framework, providing a standardized and reproducible environment for comparing search accuracy, throughput, index construction time, query latency, and memory consumption.
+
+The evaluation considers representative ANN methods from the major indexing families:
+
+- **Exact search:** Brute Force (ground-truth reference).
+- **Hash-based methods:** Locality-Sensitive Hashing (LSH).
+- **Cluster-based methods:** IVF and IVFADC.
+- **Partition and quantization methods:** ScaNN.
+- **Graph-based methods:** HNSW.
+- **Disk-based graph methods:** DiskANN.
+- **Hybrid methods:** Hybrid Attribute-Spatial HNSW (proposed).
+
+Experiments are conducted using the **SIFT1M** benchmark dataset to evaluate conventional ANN search performance and an **attributed vector dataset** to evaluate hybrid attribute-aware vector search. While SIFT1M provides a standardized benchmark for comparing ANN indexing techniques, the attributed dataset assesses the effectiveness of combining attribute filtering, spatial clustering, and local HNSW search.
+
+Performance is evaluated using **Recall@k**, **Queries Per Second (QPS)**, **index construction time**, **query latency**, **memory consumption**, and **index size** under identical hardware and software configurations. The benchmarking framework enables reproducible and fair comparisons between the proposed Hybrid Attribute-Spatial HNSW index and representative state-of-the-art ANN indexing techniques.
 
 ---
 
-## ANN-Benchmarks Evaluation Framework
+## Hardware Platform
 
-ANN-Benchmarks [1] is a standardized evaluation environment for approximate nearest neighbor (ANN) search algorithms. It provides pre-computed datasets with ground-truth nearest neighbors, isolated execution environments per algorithm, and a unified set of metrics including recall, QPS, build time, and index size. We rerun all baseline algorithms — including hnswlib, FAISS-IVF, ScaNN, and Annoy — 
-on our NVIDIA DGX Spark to ensure a direct and fair comparison against our Clustered 
-HNSW system under identical hardware conditions.
-
----
-
-## Hardware Specification
+All benchmark experiments are conducted on an **NVIDIA DGX Spark** workstation. The hardware configuration used throughout the evaluation is summarized below.
 
 | Component | Specification |
-|---|---|
+|-----------|---------------|
 | **System** | NVIDIA DGX Spark |
-| **Chip** | GB10 Grace Blackwell |
+| **Processor** | NVIDIA GB10 Grace Blackwell |
 | **CPU** | ARM Cortex @ 3.8 GHz |
-| **Memory** | 128GB unified memory |
-| **Storage** | 4TB |
-| **AI Performance** | Up to 1 petaFLOP (FP4) |
-| **Max Model Size** | Up to 200B parameters (FP4) |
+| **Memory** | 128 GB Unified Memory |
+| **Storage** | 4 TB NVMe SSD |
 | **Operating System** | NVIDIA DGX OS |
-
----
 
 ## Datasets
 
-All datasets are pre-split into train/test and include ground truth
-for the top-100 nearest neighbors. Source: ann-benchmarks.com
+The benchmark uses two datasets to evaluate different aspects of the proposed Hybrid Attribute-Spatial HNSW index.
 
-| Dataset | Dimensions | Train size | Test size | Distance | Size | Our Use |
-|---|---|---|---|---|---|---|
-| [SIFT](http://corpus-texmex.irisa.fr/) | 128 | 1,000,000 | 10,000 | Euclidean | 501MB | Primary |
-| [GIST](http://corpus-texmex.irisa.fr/) | 960 | 1,000,000 | 1,000 | Euclidean | 3.6GB | Future |
-| [GloVe-25](http://nlp.stanford.edu/projects/glove/) | 25 | 1,183,514 | 10,000 | Angular | 121MB | Future |
-| [GloVe-100](http://nlp.stanford.edu/projects/glove/) | 100 | 1,183,514 | 10,000 | Angular | 463MB | Future |
-| [Fashion-MNIST](https://github.com/zalandoresearch/fashion-mnist) | 784 | 60,000 | 10,000 | Euclidean | 217MB | Future |
-| [NYTimes](https://archive.ics.uci.edu/ml/datasets/bag+of+words) | 256 | 290,000 | 10,000 | Angular | 301MB | Future |
-| [DEEP1B](http://sites.skoltech.ru/compvision/noimi/) | 96 | 9,990,000 | 10,000 | Angular | 3.6GB | Future |
-| [Last.fm](https://github.com/erikbern/ann-benchmarks/pull/91) | 65 | 292,385 | 50,000 | Angular | 135MB | Future |
+### Public ANN Benchmark
+
+The **SIFT1M** dataset, provided by the ANN-Benchmarks framework, serves as the primary benchmark for evaluating conventional approximate nearest neighbor search performance.
+
+| Dataset | Dimension | Database Size | Query Size | Distance Metric |
+|----------|----------:|--------------:|-----------:|-----------------|
+| **SIFT1M** | 128 | 1,000,000 | 10,000 | Euclidean |
+
+### Attributed Dataset
+
+An attributed vector dataset is used to evaluate hybrid vector search with metadata filtering. Unlike SIFT1M, this dataset associates each vector with one or more attributes, enabling evaluation of:
+
+- Attribute-aware filtering
+- Spatial clustering
+- Local HNSW search
+- Hybrid vector retrieval
+
+The attributed dataset complements SIFT1M by evaluating the proposed architecture under realistic filtered vector search workloads.
 
 ### Download All Datasets
 
@@ -52,36 +63,36 @@ python3 download_datasets.py
 
 ---
 
-## Algorithms Compared
+## Supported ANN Algorithms
 
-These are the main algorithms on ANN-Benchmarks relevant to our work.
-Full list: [ann-benchmarks.com/#algorithms](https://ann-benchmarks.com/index.html#algorithms)
+The benchmarking framework is designed to evaluate representative **Approximate Nearest Neighbor (ANN)** indexing techniques available through the **ANN-Benchmarks** framework. These algorithms span multiple indexing families and provide representative baselines for evaluating the proposed **Hybrid Attribute-Spatial HNSW** index.
 
-### Graph-Based (same family as our work)
-| Algorithm | Description | GitHub |
-|---|---|---|
-| **hnswlib** | Our base algorithm — HNSW graph search | [nmslib/hnswlib](https://github.com/nmslib/hnswlib) |
-| hnsw(nmslib) | HNSW in NMSLIB | [nmslib/nmslib](https://github.com/nmslib/nmslib) |
-| hnsw(faiss) | HNSW in FAISS | [facebookresearch/faiss](https://github.com/facebookresearch/faiss) |
-| glass | Top performer, HNSW variant | [hhy3/pyglass](https://github.com/hhy3/pyglass) |
-| vamana(diskann) | Microsoft DiskANN | [microsoft/diskann](https://github.com/microsoft/diskann) |
-| n2 | Kakao HNSW implementation | [kakao/n2](https://github.com/kakao/n2) |
+### Graph-Based Methods
 
-### Partition-Based (related to our clustering approach)
-| Algorithm | Description | GitHub |
-|---|---|---|
-| **faiss-ivf** | IVF index (clusters + flat search) | [facebookresearch/faiss](https://github.com/facebookresearch/faiss) |
-| scann | Google ScaNN (partitioned) | [google-research/scann](https://github.com/google-research/google-research/tree/master/scann) |
-| annoy | Spotify Annoy (trees) | [spotify/annoy](https://github.com/spotify/annoy) |
-| pynndescent | PyNNDescent | [lmcinnes/pynndescent](https://github.com/lmcinnes/pynndescent) |
+| Algorithm | Description | Repository |
+|-----------|-------------|------------|
+| **hnswlib** | Reference HNSW implementation | https://github.com/nmslib/hnswlib |
+| **HNSW (NMSLIB)** | HNSW implementation in NMSLIB | https://github.com/nmslib/nmslib |
+| **HNSW (FAISS)** | HNSW implementation in FAISS | https://github.com/facebookresearch/faiss |
+| **GLASS** | Optimized graph-based ANN search | https://github.com/hhy3/pyglass |
+| **DiskANN (Vamana)** | Disk-resident graph-based ANN search | https://github.com/microsoft/diskann |
+| **N2** | Graph-based ANN implementation | https://github.com/kakao/n2 |
 
-### Vector Databases
-| Algorithm | Description | GitHub |
-|---|---|---|
-| qdrant | Qdrant vector database | [qdrant/qdrant](https://github.com/qdrant/qdrant) |
-| weaviate | Weaviate vector database | [weaviate/weaviate](https://github.com/weaviate/weaviate) |
-| pgvector | PostgreSQL vector extension | [pgvector/pgvector](https://github.com/pgvector/pgvector) |
-| Milvus(Knowhere) | Milvus vector database | [milvus-io/milvus](https://github.com/milvus-io/milvus) |
+### Partition-Based Methods
+
+| Algorithm | Description | Repository |
+|-----------|-------------|------------|
+| **FAISS-IVF** | Inverted File (IVF) index | https://github.com/facebookresearch/faiss |
+| **ScaNN** | Partitioning with anisotropic quantization | https://github.com/google-research/google-research/tree/master/scann |
+| **PyNNDescent** | Approximate graph construction using NN-Descent | https://github.com/lmcinnes/pynndescent |
+
+### Exact Search
+
+| Algorithm | Description |
+|-----------|-------------|
+| **Brute Force** | Exact nearest neighbor search used to generate ground truth and compute recall. |
+
+> **Note:** The benchmarking framework supports these ANN implementations through ANN-Benchmarks. Individual benchmark results will be added as experiments are completed on the NVIDIA DGX Spark platform.
 
 ---
 
@@ -105,113 +116,87 @@ Example: k=10, found 9 of the true 10 nearest neighbors → Recall = 0.9
 
 ## Experimental Setup
 
-- **ANN-Benchmarks baseline:** AWS r6i.16xlarge (single CPU, hyperthreading disabled).
-- **Our system:** NVIDIA DGX Spark (128GB unified memory, NVIDIA Blackwell GPU).
-- All experiments were rerun on our hardware to ensure a fair and consistent comparison across all evaluated algorithms.
+Benchmark experiments are conducted using the **ANN-Benchmarks** framework on an **NVIDIA DGX Spark** workstation. All evaluated ANN methods are executed under identical hardware and software configurations to ensure fair and reproducible comparisons.
 
-### Recall vs QPS
+The evaluation consists of two complementary studies:
 
-| Method | Recall@1 | QPS | Build Time (s) |
-|---|---|---|---|
-| hnswlib | — | — | — |
-| FAISS-IVF | — | — | — |
-| ScaNN | — | — | — |
-| Annoy | — | — | — |
-| **Clustered HNSW (Ours)** | — | — | — |
+1. **Public Benchmark Evaluation**
+   - Dataset: **SIFT1M**
+   - Distance metric: Euclidean
+   - Evaluation: Recall@k, Queries Per Second (QPS), index construction time, query latency, memory consumption, and index size.
 
-> Results will be updated upon completion of experiments on the NVIDIA DGX Spark.
+2. **Hybrid Search Evaluation**
+   - Dataset: Attributed vector dataset
+   - Evaluation: Hybrid attribute-aware vector search using attribute filtering, spatial clustering, and local HNSW search.
 
-### Build Time
-
-| Method | Build Time (s) | vs Baseline |
-|---|---|---|
-| Baseline HNSW (1M vectors) | — | 1× |
-| **Clustered HNSW** | — | TBD |
-| hnswlib (ANN-Benchmarks) | — | — |
-| FAISS-IVF (ANN-Benchmarks) | — | — |
-
-> Results will be updated upon completion of experiments on the NVIDIA DGX Spark.
+As benchmark experiments are completed, performance results for representative ANN indexing techniques—including HNSW, IVF, ScaNN, DiskANN, and the proposed Hybrid Attribute-Spatial HNSW—will be added to this repository.
 
 ---
 
-## Folder Structure
+## Repository Structure
 
-```
+```text
 benchmarks/
-├── README.md                  ← this file
+├── README.md
 ├── data/
-│   ├── download_datasets.py   ← download all ANN-benchmark datasets
-│   └── sift/                  ← SIFT1M data (gitignored)
+│   ├── download_datasets.py
+│   └── sift/
 │
 ├── algorithms/
-│   ├── README.md              ← algorithm descriptions
-│   ├── baseline_hnsw.cpp      ← standard hnswlib (our baseline)
-│   ├── clustered_hnsw.cpp     ← our method (main contribution)
-│   ├── faiss_ivf.py           ← FAISS IVF comparison
-│   └── brute_force.py        ← exact search (recall=1.0 reference)
+│   ├── baseline_hnsw.cpp
+│   ├── clustered_hnsw.cpp
+│   ├── faiss_ivf.py
+│   └── brute_force.py
 │
-├── run_benchmark.sh           ← run all algorithms, save results
-├── results.csv                ← all benchmark results (auto-generated)
-└── dashboard.html             ← interactive results viewer
+├── run_benchmark.sh
+├── results/
+└── figures/
 ```
 
 ---
 
-## How to Run
+## Running the Benchmarks
 
-### Quick comparison (our methods only)
+### Run all benchmarks
+
 ```bash
 cd benchmarks
 ./run_benchmark.sh
 ```
 
-### Full ANN-Benchmarks comparison
+### Run ANN-Benchmarks
+
 ```bash
-# Install ANN-Benchmarks
 git clone https://github.com/erikbern/ann-benchmarks.git
 cd ann-benchmarks
+
 pip install -r requirements.txt
 python install.py
 
-# Run on SIFT dataset
-python run.py --dataset sift-128-euclidean --algorithm hnswlib
-python plot.py --dataset sift-128-euclidean
+python run.py \
+    --dataset sift-128-euclidean \
+    --algorithm hnswlib
+
+python plot.py \
+    --dataset sift-128-euclidean
 ```
 
 ---
 
-## Expected Findings
+## Results
 
-1. **Build time:**
-
-2. **Recall match:**
-
-3. **QPS tradeoff:**
-
-4. **Real-time insertions:**
+Benchmark results, plots, and performance comparisons will be added as experiments are completed.
 
 ---
 
 ## References
 
-> All benchmark comparisons in this project use the ANN-Benchmarks framework [1].
+1. M. Aumüller, E. Bernhardsson, and A. Faithfull. **ANN-Benchmarks: A Benchmarking Tool for Approximate Nearest Neighbor Algorithms.** *Information Systems*, 2019.
 
-1. M. Aumüller, E. Bernhardsson, A. Faithfull: **ANN-Benchmarks: A Benchmarking
-   Tool for Approximate Nearest Neighbor Algorithms.** Information Systems, 2019.
-   DOI: 10.1016/j.is.2019.02.006 · [ann-benchmarks.com](https://ann-benchmarks.com) · [GitHub](https://github.com/erikbern/ann-benchmarks)
+2. Y. Malkov and D. Yashunin. **Efficient and Robust Approximate Nearest Neighbor Search Using Hierarchical Navigable Small World Graphs.** *IEEE TPAMI*, 2020.
 
-2. Y. Malkov, D. Yashunin: **Efficient and Robust Approximate Nearest Neighbor
-   Search Using Hierarchical Navigable Small World Graphs.** IEEE TPAMI, 2020.
-   arXiv: 1603.09320
+3. J. Johnson, M. Douze, and H. Jégou. **Billion-Scale Similarity Search with GPUs.** *IEEE Big Data*, 2019.
 
-3. J. Johnson, M. Douze, H. Jégou: **Billion-Scale Similarity Search with GPUs.**
-   IEEE Big Data, 2021. arXiv: 1702.08734
+4. H. Jégou, M. Douze, and C. Schmid. **Product Quantization for Nearest Neighbor Search.** *IEEE TPAMI*, 2011.
 
-4. H. Jégou, M. Douze, C. Schmid: **Product Quantization for Nearest Neighbor
-   Search.** IEEE TPAMI, 2011. DOI: 10.1109/TPAMI.2010.57
-   
 ---
-
-## Figures
-
-See [figures.html](figures.html) for Table 1, Figure 4, Figure 5, and Figure 6 with full citations.
