@@ -22,7 +22,7 @@ import urllib.request
 DATASETS = {
     "sift": {
         "name":     "SIFT-128-Euclidean",
-        "url":      "http://ann-benchmarks.com/sift-128-euclidean.hdf5",
+        "url":      "https://ann-benchmarks.com/sift-128-euclidean.hdf5",
         "file":     "sift-128-euclidean.hdf5",
         "size":     "501MB",
         "dims":     128,
@@ -33,7 +33,7 @@ DATASETS = {
     },
     "gist": {
         "name":     "GIST-960-Euclidean",
-        "url":      "http://ann-benchmarks.com/gist-960-euclidean.hdf5",
+        "url":      "https://ann-benchmarks.com/gist-960-euclidean.hdf5",
         "file":     "gist-960-euclidean.hdf5",
         "size":     "3.6GB",
         "dims":     960,
@@ -44,7 +44,7 @@ DATASETS = {
     },
     "glove-25": {
         "name":     "GloVe-25-Angular",
-        "url":      "http://ann-benchmarks.com/glove-25-angular.hdf5",
+        "url":      "https://ann-benchmarks.com/glove-25-angular.hdf5",
         "file":     "glove-25-angular.hdf5",
         "size":     "121MB",
         "dims":     25,
@@ -55,7 +55,7 @@ DATASETS = {
     },
     "glove-100": {
         "name":     "GloVe-100-Angular",
-        "url":      "http://ann-benchmarks.com/glove-100-angular.hdf5",
+        "url":      "https://ann-benchmarks.com/glove-100-angular.hdf5",
         "file":     "glove-100-angular.hdf5",
         "size":     "463MB",
         "dims":     100,
@@ -66,7 +66,7 @@ DATASETS = {
     },
     "fashion-mnist": {
         "name":     "Fashion-MNIST-784-Euclidean",
-        "url":      "http://ann-benchmarks.com/fashion-mnist-784-euclidean.hdf5",
+        "url":      "https://ann-benchmarks.com/fashion-mnist-784-euclidean.hdf5",
         "file":     "fashion-mnist-784-euclidean.hdf5",
         "size":     "217MB",
         "dims":     784,
@@ -77,7 +77,7 @@ DATASETS = {
     },
     "nytimes": {
         "name":     "NYTimes-256-Angular",
-        "url":      "http://ann-benchmarks.com/nytimes-256-angular.hdf5",
+        "url":      "https://ann-benchmarks.com/nytimes-256-angular.hdf5",
         "file":     "nytimes-256-angular.hdf5",
         "size":     "301MB",
         "dims":     256,
@@ -88,7 +88,7 @@ DATASETS = {
     },
     "lastfm": {
         "name":     "Last.fm-65-Angular",
-        "url":      "http://ann-benchmarks.com/lastfm-64-dot.hdf5",
+        "url":      "https://ann-benchmarks.com/lastfm-64-dot.hdf5",
         "file":     "lastfm-64-dot.hdf5",
         "size":     "135MB",
         "dims":     65,

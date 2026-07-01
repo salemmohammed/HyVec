@@ -1,9 +1,8 @@
-# Algorithms
+# Approximate Nearest Neighbor Algorithms
 
-This section describes the approximate nearest neighbor search (ANNS) algorithms
-evaluated in our study. We follow the taxonomy and evaluation methodology of Wang
-et al. [1], the most comprehensive survey of graph-based ANNS algorithms to date,
-and extend it with our proposed Clustered HNSW system.
+This section describes the Approximate Nearest Neighbor Search (ANNS) algorithms
+evaluated in this work. The algorithm taxonomy follows Wang et al. [1], while the
+experimental evaluation follows the ANN-Benchmarks methodology [6].
 
 ---
 
@@ -19,7 +18,7 @@ $$x^* = \arg\min_{x \in \mathcal{X}} \delta(x, q)$$
 where $\delta(x, q) = \sqrt{\sum_i (x_i - q_i)^2}$ denotes the Euclidean (L2)
 distance. Exact search requires $O(N \cdot d)$ comparisons per query — prohibitive
 at scale. Approximate Nearest Neighbor Search (ANNS) sacrifices a bounded amount
-of accuracy for dramatically reduced query latency.
+of accuracy for significantly reduced query latency.
 
 ### Accuracy Metric
 
@@ -105,8 +104,7 @@ coarse navigation; lower layers contain short-range edges for precise local sear
 At query time, the algorithm performs a greedy descent from the top layer,
 narrowing the candidate set at each layer until convergence.
 
-Compared to NSW, which has poly-logarithmic search complexity, HNSW bounds the
-maximum degree per node per layer, reducing search complexity to $O(\log N)$ [1, 2].
+HNSW is one of the most widely adopted graph-based ANN indexes because it provides an excellent trade-off between recall, search latency, and construction cost [1,2].
 
 **Key parameters:**
 
@@ -128,44 +126,72 @@ precludes efficient real-time insertion without index degradation.
 
 ---
 
-### 3. Clustered HNSW (Proposed Method)
+### 3. Hybrid Attribute-Spatial HNSW (Proposed Method)
 
-The proposed system partitions the dataset into $K$ clusters at build time using
-k-means. Each cluster is assigned a centroid vector and an independent HNSW index.
-At query time, the query is compared against all $K$ centroids and routed to the
-$T$ nearest clusters, which are searched in parallel.
+The proposed **Hybrid Attribute-Spatial HNSW** index combines spatial partitioning with graph-based search to reduce the search space while preserving the high recall characteristics of HNSW. During index construction, the dataset is partitioned into **K** spatial clusters using k-means. Each cluster is represented by a centroid and maintains an independent HNSW index containing only the vectors assigned to that cluster.
 
-**Build phase:**
+During query processing, the query vector is first compared with all cluster centroids. The **T** nearest clusters are selected, and their corresponding HNSW indexes are searched independently. The candidate results from the selected clusters are then merged and ranked to produce the final Top-*k* nearest neighbors.
 
-$$\mathcal{X} \xrightarrow{\text{k-means}} \{C_0, C_1, \ldots, C_{K-1}\}, \quad
-\text{each } C_k \rightarrow (\mu_k,\ \text{HNSW}_k)$$
+#### Index Construction
 
-**Query phase:**
+The dataset is partitioned as
 
-$$q \rightarrow \underbrace{O(K \cdot d)}_{\text{centroid scan}}
-\rightarrow \text{top-}T\text{ clusters}
-\rightarrow \underbrace{O(\log(N/K))}_{\text{HNSW search per cluster}}
-\rightarrow \text{top-}k\text{ results}$$
+$$
+\mathcal{X}
+\xrightarrow{\text{k-means}}
+\{C_0,C_1,\ldots,C_{K-1}\},
+$$
 
-**Key parameters:**
+where each cluster
 
-| Parameter | Role |
-|---|---|
-| `K` | Number of clusters |
-| `T` (TOP_CLUSTERS) | Clusters searched per query — controls the recall/QPS tradeoff |
-| `M`, `ef_construction`, `ef_search` | Per-cluster HNSW parameters |
+$$
+C_i \rightarrow (\mu_i,\mathrm{HNSW}_i)
+$$
+
+is represented by its centroid \(\mu_i\) and an independent HNSW index.
+
+#### Query Processing
+
+For a query vector \(q\),
+
+$$
+q
+\rightarrow
+\text{Centroid Search}
+\rightarrow
+\text{Top-}T\text{ Clusters}
+\rightarrow
+\text{Local HNSW Search}
+\rightarrow
+\text{Merge Candidates}
+\rightarrow
+\text{Top-}k.
+$$
+
+The query first performs a linear scan over the **K** cluster centroids, followed by HNSW searches within the selected **T** clusters.
+
+#### Main Parameters
+
+| Parameter | Description |
+|-----------|-------------|
+| `K` | Number of spatial clusters |
+| `T` | Number of clusters searched for each query |
+| `M` | Maximum graph degree of each local HNSW index |
+| `ef_construction` | HNSW construction parameter |
+| `ef_search` | HNSW search parameter |
+
+#### Complexity
 
 | Metric | Complexity |
-|---|---|
-| Query time | $O(K \cdot d + T \cdot \log(N/K))$ |
-| Build time | $O(N \cdot K + N \cdot M \cdot \log(N/K))$ |
-| Memory | $O(N \cdot M)$ |
+|---------|------------|
+| Query time | $O(Kd + T\log(N/K))$ |
+| Build time | K-means clustering + local HNSW construction |
+| Memory | $O(NM)$ |
 
-Real-time insertions are handled by a background thread that monitors the arrival
-rate and triggers local re-clustering when a cluster exceeds a size threshold.
-New indexes are built and swapped atomically, incurring zero query interruption.
+where \(N\) is the number of vectors, \(d\) is the vector dimension, \(K\) is the number of clusters, and \(T\) is the number of clusters searched during query processing.
 
----
+Compared with a single global HNSW index, the proposed approach reduces the effective search space by restricting graph traversal to a subset of spatially relevant clusters. In addition, index maintenance is localized to individual clusters, allowing updates and rebuilding operations to be performed independently without reconstructing the entire index.
+
 
 ### 4. FAISS-IVF — Inverted File Index
 
@@ -198,33 +224,6 @@ product quantization does. ScaNN consistently achieves the highest QPS at high
 recall on ANN-Benchmarks and represents the strongest throughput competitor for
 any proposed ANN system.
 
----
-
-### 6. Annoy — Approximate Nearest Neighbors Oh Yeah
-
-Annoy [5] builds a forest of random projection trees. Each tree is constructed by
-repeatedly selecting a random hyperplane that bisects the current vector set,
-recursing until each leaf contains fewer than a fixed number of vectors. At query
-time, all trees are traversed and candidate sets are merged and re-ranked by
-distance. Annoy does not support incremental insertion — the full forest must be
-rebuilt when new vectors are added — which is a fundamental limitation that our
-background re-clustering strategy directly addresses.
-
----
-
-## Summary
-
-| Algorithm | Family | Incremental Insert | Recall@High | Build Cost |
-|---|---|---|---|---|
-| Brute Force | Exact | ✅ | 1.00 | None |
-| HNSW | Graph (RNG) | ⚠️ Degrades | ~0.97 | High |
-| **Clustered HNSW (ours)** | Graph + Partition | ✅ | TBD | Lower than HNSW |
-| FAISS-IVF | Partition | ❌ Rebuild | ~0.95 | Medium |
-| ScaNN | Partition + Quantization | ❌ Rebuild | ~0.99 | Medium |
-| Annoy | Tree | ❌ Rebuild | ~0.90 | Low |
-
-> Clustered HNSW results marked TBD will be updated upon completion of experiments
-> on the NVIDIA DGX Spark.
 
 ---
 

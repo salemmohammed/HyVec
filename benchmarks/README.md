@@ -1,26 +1,38 @@
 # Benchmarks
 
-This directory contains the benchmarking framework used to evaluate the proposed **Hybrid Attribute-Spatial HNSW** index against representative **Approximate Nearest Neighbor (ANN)** indexing techniques. The benchmark is built on the **ANN-Benchmarks** framework, providing a standardized and reproducible environment for comparing search accuracy, throughput, index construction time, query latency, and memory consumption.
+This directory contains the benchmarking framework used to evaluate the proposed **Hybrid Attribute-Spatial HNSW** index against representative **Approximate Nearest Neighbor (ANN)** indexing techniques. The benchmark is built upon the **ANN-Benchmarks** framework, providing a standardized and reproducible environment for evaluating search accuracy, throughput, index construction time, query latency, memory consumption, and index size.
 
-The evaluation considers representative ANN methods from the major indexing families:
+The evaluation includes representative ANN methods from the major indexing families:
 
-- **Exact search:** Brute Force (ground-truth reference).
-- **Hash-based methods:** Locality-Sensitive Hashing (LSH).
-- **Cluster-based methods:** IVF and IVFADC.
-- **Partition and quantization methods:** ScaNN.
-- **Graph-based methods:** HNSW.
-- **Disk-based graph methods:** DiskANN.
-- **Hybrid methods:** Hybrid Attribute-Spatial HNSW (proposed).
+- **Exact search:** Brute Force (ground-truth reference)
+- **Hash-based methods:** Locality-Sensitive Hashing (LSH)
+- **Cluster-based methods:** IVF and IVFADC
+- **Partition and quantization methods:** ScaNN
+- **Graph-based methods:** HNSW
+- **Disk-based graph methods:** DiskANN
+- **Hybrid methods:** Hybrid Attribute-Spatial HNSW (proposed)
 
-Experiments are conducted using the **SIFT1M** benchmark dataset to evaluate conventional ANN search performance and an **attributed vector dataset** to evaluate hybrid attribute-aware vector search. While SIFT1M provides a standardized benchmark for comparing ANN indexing techniques, the attributed dataset assesses the effectiveness of combining attribute filtering, spatial clustering, and local HNSW search.
+Experiments are conducted using the **SIFT1M** benchmark dataset to evaluate conventional ANN search performance and an **attributed vector dataset** to evaluate hybrid attribute-aware vector search. While SIFT1M provides a standardized benchmark for comparing ANN indexing techniques, the attributed dataset evaluates the effectiveness of combining attribute filtering, spatial clustering, and local HNSW search.
 
-Performance is evaluated using **Recall@k**, **Queries Per Second (QPS)**, **index construction time**, **query latency**, **memory consumption**, and **index size** under identical hardware and software configurations. The benchmarking framework enables reproducible and fair comparisons between the proposed Hybrid Attribute-Spatial HNSW index and representative state-of-the-art ANN indexing techniques.
+Performance is evaluated using **Recall@k**, **Queries Per Second (QPS)**, **index construction time**, **query latency**, **memory consumption**, and **index size** under identical hardware and software configurations.
 
 ---
 
-## Hardware Platform
+# Benchmark Goals
 
-All benchmark experiments are conducted on an **NVIDIA DGX Spark** workstation. The hardware configuration used throughout the evaluation is summarized below.
+The benchmarking framework is designed to answer the following questions:
+
+- How does Hybrid Attribute-Spatial HNSW compare with representative ANN indexing techniques?
+- What is the trade-off between search accuracy and throughput?
+- How much overhead does attribute-aware partitioning introduce?
+- How does local HNSW indexing affect query performance?
+- What are the construction and maintenance costs of clustered HNSW indexes?
+
+---
+
+# Hardware Platform
+
+All benchmark experiments are conducted on an **NVIDIA DGX Spark** workstation.
 
 | Component | Specification |
 |-----------|---------------|
@@ -31,165 +43,303 @@ All benchmark experiments are conducted on an **NVIDIA DGX Spark** workstation. 
 | **Storage** | 4 TB NVMe SSD |
 | **Operating System** | NVIDIA DGX OS |
 
-## Datasets
+---
 
-The benchmark uses two datasets to evaluate different aspects of the proposed Hybrid Attribute-Spatial HNSW index.
+# Datasets
 
-### Public ANN Benchmark
+Two datasets are used throughout the evaluation.
 
-The **SIFT1M** dataset, provided by the ANN-Benchmarks framework, serves as the primary benchmark for evaluating conventional approximate nearest neighbor search performance.
+## Public ANN Benchmark
 
-| Dataset | Dimension | Database Size | Query Size | Distance Metric |
-|----------|----------:|--------------:|-----------:|-----------------|
-| **SIFT1M** | 128 | 1,000,000 | 10,000 | Euclidean |
+The **SIFT1M** dataset provided by ANN-Benchmarks is used for evaluating conventional ANN search performance.
 
-### Attributed Dataset
+| Dataset | Dimension | Database Size | Query Size | Distance |
+|----------|----------:|--------------:|-----------:|----------|
+| **SIFT1M** | 128 | 1,000,000 | 10,000 | Euclidean (L2) |
 
-An attributed vector dataset is used to evaluate hybrid vector search with metadata filtering. Unlike SIFT1M, this dataset associates each vector with one or more attributes, enabling evaluation of:
+## Attributed Dataset
+
+An attributed vector dataset is used to evaluate hybrid vector search with metadata filtering.
+
+Each vector is associated with one or more attributes, allowing evaluation of:
 
 - Attribute-aware filtering
 - Spatial clustering
-- Local HNSW search
+- Local HNSW indexing
 - Hybrid vector retrieval
 
-The attributed dataset complements SIFT1M by evaluating the proposed architecture under realistic filtered vector search workloads.
+---
 
-### Download All Datasets
+## Download SIFT1M
 
 ```bash
 cd benchmarks/data
-python3 download_datasets.py
+
+curl -L \
+  -A "Mozilla/5.0" \
+  -o sift-128-euclidean.hdf5 \
+  https://ann-benchmarks.com/sift-128-euclidean.hdf5
+```
+
+Verify the download:
+
+```bash
+ls -lh sift-128-euclidean.hdf5
+```
+
+Expected output:
+
+```text
+-rw-r--r--  ... 501M sift-128-euclidean.hdf5
+```
+
+Directory layout:
+
+```text
+benchmarks/
+├── algorithms/
+├── data/
+│   ├── download_datasets.py
+│   └── sift-128-euclidean.hdf5
+├── results/
+└── README.md
 ```
 
 ---
 
-## Supported ANN Algorithms
+# Supported ANN Algorithms
 
-The benchmarking framework is designed to evaluate representative **Approximate Nearest Neighbor (ANN)** indexing techniques available through the **ANN-Benchmarks** framework. These algorithms span multiple indexing families and provide representative baselines for evaluating the proposed **Hybrid Attribute-Spatial HNSW** index.
+The benchmarking framework evaluates representative ANN indexing techniques available through ANN-Benchmarks.
 
-### Graph-Based Methods
-
-| Algorithm | Description | Repository |
-|-----------|-------------|------------|
-| **hnswlib** | Reference HNSW implementation | https://github.com/nmslib/hnswlib |
-| **HNSW (NMSLIB)** | HNSW implementation in NMSLIB | https://github.com/nmslib/nmslib |
-| **HNSW (FAISS)** | HNSW implementation in FAISS | https://github.com/facebookresearch/faiss |
-| **GLASS** | Optimized graph-based ANN search | https://github.com/hhy3/pyglass |
-| **DiskANN (Vamana)** | Disk-resident graph-based ANN search | https://github.com/microsoft/diskann |
-| **N2** | Graph-based ANN implementation | https://github.com/kakao/n2 |
-
-### Partition-Based Methods
-
-| Algorithm | Description | Repository |
-|-----------|-------------|------------|
-| **FAISS-IVF** | Inverted File (IVF) index | https://github.com/facebookresearch/faiss |
-| **ScaNN** | Partitioning with anisotropic quantization | https://github.com/google-research/google-research/tree/master/scann |
-| **PyNNDescent** | Approximate graph construction using NN-Descent | https://github.com/lmcinnes/pynndescent |
-
-### Exact Search
+## Graph-Based Methods
 
 | Algorithm | Description |
 |-----------|-------------|
-| **Brute Force** | Exact nearest neighbor search used to generate ground truth and compute recall. |
+| **hnswlib** | Reference HNSW implementation |
+| **HNSW (NMSLIB)** | HNSW implementation in NMSLIB |
+| **HNSW (FAISS)** | HNSW implementation in FAISS |
+| **GLASS** | Optimized graph-based ANN search |
+| **DiskANN (Vamana)** | Disk-resident graph-based ANN search |
+| **N2** | Graph-based ANN implementation |
 
-> **Note:** The benchmarking framework supports these ANN implementations through ANN-Benchmarks. Individual benchmark results will be added as experiments are completed on the NVIDIA DGX Spark platform.
+## Partition-Based Methods
+
+| Algorithm | Description |
+|-----------|-------------|
+| **FAISS-IVF** | Inverted File index |
+| **ScaNN** | Partitioning with anisotropic quantization |
+| **PyNNDescent** | Approximate graph construction using NN-Descent |
+
+## Exact Search
+
+| Algorithm | Description |
+|-----------|-------------|
+| **FAISS IndexFlatL2** | Exact nearest neighbor search used as the ground-truth baseline. |
 
 ---
 
-## Metrics Explained
+# Evaluation Metrics
 
-| Metric | Definition | How We Measure |
-|---|---|---|
-| **Recall@k** | Fraction of true k-nearest neighbors found | compare results to ground truth |
-| **QPS** | Queries per second | `num_queries / search_time` |
-| **Build time** | Time to build the index | measured in seconds |
-| **Index size** | Memory used by the index | measured in KB |
+| Metric | Description |
+|--------|-------------|
+| **Recall@k** | Fraction of true nearest neighbors returned |
+| **Queries Per Second (QPS)** | Query throughput |
+| **Average Query Latency** | Average search time per query |
+| **Build Time** | Time required to construct the index |
+| **Search Time** | Total query execution time |
+| **Memory Consumption** | Memory required by the index |
+| **Index Size** | Size of the constructed index |
 
-### Recall formula
+Recall is computed as
+
+```text
+Recall@k = |Retrieved ∩ GroundTruth| / k
 ```
-Recall@k = |found ∩ ground_truth| / k
-
-Example: k=10, found 9 of the true 10 nearest neighbors → Recall = 0.9
-```
 
 ---
 
-## Experimental Setup
+# Experimental Setup
 
-Benchmark experiments are conducted using the **ANN-Benchmarks** framework on an **NVIDIA DGX Spark** workstation. All evaluated ANN methods are executed under identical hardware and software configurations to ensure fair and reproducible comparisons.
+All algorithms are evaluated on the same hardware using identical software configurations.
 
-The evaluation consists of two complementary studies:
+The evaluation consists of two complementary studies.
 
-1. **Public Benchmark Evaluation**
-   - Dataset: **SIFT1M**
-   - Distance metric: Euclidean
-   - Evaluation: Recall@k, Queries Per Second (QPS), index construction time, query latency, memory consumption, and index size.
+## Public Benchmark
 
-2. **Hybrid Search Evaluation**
-   - Dataset: Attributed vector dataset
-   - Evaluation: Hybrid attribute-aware vector search using attribute filtering, spatial clustering, and local HNSW search.
+- Dataset: **SIFT1M**
+- Distance: **Euclidean (L2)**
+- Metrics:
+  - Recall@k
+  - QPS
+  - Query latency
+  - Build time
+  - Search time
+  - Memory usage
+  - Index size
 
-As benchmark experiments are completed, performance results for representative ANN indexing techniques—including HNSW, IVF, ScaNN, DiskANN, and the proposed Hybrid Attribute-Spatial HNSW—will be added to this repository.
+## Hybrid Search Benchmark
+
+- Dataset: Attributed vector dataset
+- Evaluation:
+  - Attribute filtering
+  - Spatial clustering
+  - Local HNSW search
+  - Hybrid vector retrieval
 
 ---
 
-## Repository Structure
+# Repository Structure
 
 ```text
 benchmarks/
 ├── README.md
 ├── data/
 │   ├── download_datasets.py
-│   └── sift/
+│   └── sift-128-euclidean.hdf5
 │
 ├── algorithms/
+│   ├── brute_force.cpp
 │   ├── baseline_hnsw.cpp
 │   ├── clustered_hnsw.cpp
-│   ├── faiss_ivf.py
-│   └── brute_force.py
+│   └── faiss_ivf.py
 │
-├── run_benchmark.sh
 ├── results/
-└── figures/
+├── figures/
+└── run_benchmark.sh
 ```
 
 ---
 
-## Running the Benchmarks
+## Running the Algorithms
 
-### Run all benchmarks
+All commands assume you are inside:
 
 ```bash
-cd benchmarks
-./run_benchmark.sh
+cd benchmarks/algorithms
 ```
 
-### Run ANN-Benchmarks
+---
+
+## Brute Force (FAISS IndexFlatL2)
+
+### Build
 
 ```bash
-git clone https://github.com/erikbern/ann-benchmarks.git
-cd ann-benchmarks
+g++ -O3 -std=c++17 brute_force.cpp -o brute_force \
+$(pkg-config --cflags --libs hdf5) \
+-I/opt/homebrew/opt/faiss/include \
+-L/opt/homebrew/opt/faiss/lib \
+-lfaiss
+```
 
-pip install -r requirements.txt
-python install.py
+### Run
 
-python run.py \
-    --dataset sift-128-euclidean \
-    --algorithm hnswlib
-
-python plot.py \
-    --dataset sift-128-euclidean
+```bash
+./brute_force \
+    --dataset ../data/sift-128-euclidean.hdf5 \
+    --k 10
 ```
 
 ---
 
-## Results
+## Baseline HNSW
 
-Benchmark results, plots, and performance comparisons will be added as experiments are completed.
+### Build
+
+```bash
+g++ -O3 -std=c++17 baseline_hnsw.cpp -o baseline_hnsw \
+-I../../hnswlib \
+$(pkg-config --cflags --libs hdf5)
+```
+
+### Run
+
+```bash
+./baseline_hnsw \
+    --dataset ../data/sift-128-euclidean.hdf5 \
+    --k 10
+```
 
 ---
 
-## References
+## FAISS-IVF (IndexIVFFlat)
+
+### Build
+
+```bash
+g++ -O3 -std=c++17 faiss_ivf.cpp -o faiss_ivf \
+$(pkg-config --cflags --libs hdf5) \
+-I/opt/homebrew/opt/faiss/include \
+-L/opt/homebrew/opt/faiss/lib \
+-lfaiss
+```
+
+### Run
+
+```bash
+./faiss_ivf \
+    --dataset ../data/sift-128-euclidean.hdf5 \
+    --k 10 \
+    --nlist 1000
+```
+
+The implementation automatically evaluates multiple **nprobe** values (`1, 5, 10, 20, 50, 100`) and appends the results to `results.csv`.
+
+---
+
+## Hybrid Attribute-Spatial HNSW (Proposed)
+
+### Build
+
+```bash
+g++ -O3 -std=c++17 clustered_hnsw.cpp -o clustered_hnsw \
+-I../../hnswlib \
+$(pkg-config --cflags --libs hdf5)
+```
+
+### Run
+
+```bash
+./clustered_hnsw \
+    --dataset ../data/sift-128-euclidean.hdf5 \
+    --k 10
+```
+
+---
+
+## Output
+
+Each benchmark prints the following performance metrics and appends them to `../results.csv`:
+
+- Recall@1
+- Recall@k
+- Queries Per Second (QPS)
+- Average query latency
+- Index construction time
+- Search time
+- Index size
+
+---
+
+# Results
+
+Benchmark results are automatically exported to **results.csv**.
+
+The table below summarizes the current benchmark results obtained on the NVIDIA DGX Spark platform.
+
+| Algorithm | Dataset | Recall@1 | Recall@10 | QPS | Avg Latency (ms) | Build Time (s) | Search Time (s) | Index Size (MB) |
+|-----------|---------|---------:|----------:|----:|-----------------:|---------------:|----------------:|----------------:|
+| **FAISS IndexFlatL2 (Brute Force)** | SIFT1M | 0.9926 | 0.99935 | 1146.03 | 0.8726 | 0.0424 | 8.7257 | 488.28 |
+| FAISS IndexFlatL2 (Brute Force, C++) | SIFT1M | 0.9926 | 0.99935 | 1146.03 | 0.8726 | 0.0424 | 8.7257 | 488.28 |
+| **FAISS-IVF (nlist=1000, nprobe=20)** | SIFT1M | 0.9642 | 0.95190 | 10123.50 | 0.0988 | 4.3771 | 0.9878 | 488.28 |
+| Baseline HNSW | SIFT1M | — | — | — | — | — | — | — |
+| Hybrid Attribute-Spatial HNSW | SIFT1M | — | — | — | — | — | — | — |
+
+> **Note:** FAISS `IndexFlatL2` is used as the exact-search baseline. Minor differences from the provided ANN-Benchmarks ground truth may occur due to tie handling or differences in ground-truth generation.
+
+---
+
+# References
 
 1. M. Aumüller, E. Bernhardsson, and A. Faithfull. **ANN-Benchmarks: A Benchmarking Tool for Approximate Nearest Neighbor Algorithms.** *Information Systems*, 2019.
 
@@ -198,5 +348,3 @@ Benchmark results, plots, and performance comparisons will be added as experimen
 3. J. Johnson, M. Douze, and H. Jégou. **Billion-Scale Similarity Search with GPUs.** *IEEE Big Data*, 2019.
 
 4. H. Jégou, M. Douze, and C. Schmid. **Product Quantization for Nearest Neighbor Search.** *IEEE TPAMI*, 2011.
-
----
