@@ -1,272 +1,221 @@
-# Approximate Nearest Neighbor Algorithms
+## Introduction
 
-This section describes the Approximate Nearest Neighbor Search (ANNS) algorithms
-evaluated in this work. The algorithm taxonomy follows Wang et al. [1], while the
-experimental evaluation follows the ANN-Benchmarks methodology [6].
+This document summarizes the Approximate Nearest Neighbor Search (ANNS) algorithms evaluated in this benchmarking framework. It provides a concise overview of the algorithms, their underlying principles, computational characteristics, and their role in the experimental evaluation.
 
----
-
-## Background
-
-### Problem Definition
-
-Given a dataset $\mathcal{X} = \{x_1, \ldots, x_N\} \subset \mathbb{R}^d$ and a
-query vector $q \in \mathbb{R}^d$, the nearest neighbor search problem is to find:
-
-$$x^* = \arg\min_{x \in \mathcal{X}} \delta(x, q)$$
-
-where $\delta(x, q) = \sqrt{\sum_i (x_i - q_i)^2}$ denotes the Euclidean (L2)
-distance. Exact search requires $O(N \cdot d)$ comparisons per query — prohibitive
-at scale. Approximate Nearest Neighbor Search (ANNS) sacrifices a bounded amount
-of accuracy for significantly reduced query latency.
-
-### Accuracy Metric
-
-Algorithm accuracy is measured by **Recall@k** — the fraction of the true k nearest
-neighbors returned by the algorithm:
-
-$$\text{Recall@}k = \frac{|\mathcal{R} \cap \tilde{\mathcal{R}}|}{k}$$
-
-where $\mathcal{R}$ is the exact result set (ground truth) and $\tilde{\mathcal{R}}$
-is the approximate result set. A value of 1.0 indicates perfect accuracy.
-
-### The Recall–QPS Tradeoff
-
-Every ANNS algorithm navigates a fundamental tradeoff between search accuracy and
-throughput. Searching fewer candidates yields higher queries per second (QPS) at
-the cost of lower recall; searching more candidates improves recall at the cost of
-throughput. The primary evaluation plot is **Recall vs. QPS**, where higher and
-further right is strictly better.
+The benchmark includes representative methods from the major ANN indexing families together with the proposed **Hybrid Attribute-Spatial HNSW** index. All algorithms are evaluated under identical datasets, hardware, and evaluation protocols to ensure fair and reproducible comparisons.
 
 ---
 
-## Algorithm Taxonomy
+# Problem Formulation
 
-Following Wang et al. [1], ANNS algorithms are organized into four families:
+Given a dataset
 
-| Family | Representative Methods |
-|---|---|
-| **Hashing-based** | LSH, E2LSH |
-| **Tree-based** | KD-Tree, Annoy, FLANN, MRPT |
-| **Quantization-based** | PQ, IVF-PQ, ScaNN |
-| **Graph-based** | NSW, HNSW, NSG, DiskANN |
+\[
+\mathcal{X}=\{x_1,x_2,\ldots,x_N\}\subset\mathbb{R}^{d}
+\]
 
-Graph-based algorithms have emerged as the dominant paradigm, achieving higher
-recall at lower latency than competing families across standard benchmarks [1].
-Our system is a **hybrid** combining graph-based search (HNSW) with
-partition-based routing (IVF-style k-means clustering).
+and a query vector \(q\in\mathbb{R}^{d}\), the nearest-neighbor search problem is
 
----
+\[
+x^*=\arg\min_{x\in\mathcal{X}}\delta(x,q)
+\]
 
-## Graph-Based ANNS: Foundational Graph Structures
+where \(\delta(\cdot,\cdot)\) denotes the Euclidean (L2) distance.
 
-Wang et al. [1] identify four base graph structures from which all graph-based
-ANNS algorithms are derived:
-
-| Base Graph | Key Property | Representative Algorithms |
-|---|---|---|
-| Delaunay Graph (DG) | Guarantees exact NNS; near-fully connected in high dimensions | NSW |
-| Relative Neighborhood Graph (RNG) | Eliminates redundant edges; omnidirectional neighbor distribution | HNSW, NSG, FANNG |
-| K-Nearest Neighbor Graph (KNNG) | Bounds degree to K; efficient but may lose global connectivity | EFANNA, IEH |
-| Minimum Spanning Tree (MST) | Minimal edges for global connectivity; suboptimal search paths | HCNNG |
-
-HNSW approximates the RNG by diversifying neighbor distribution across hierarchical
-layers, achieving logarithmic search complexity $O(\log N)$ — the best among the
-13 graph-based algorithms surveyed by Wang et al. [1].
+Exact search examines every vector in the dataset and guarantees the correct nearest neighbors. Approximate Nearest Neighbor Search (ANNS) reduces the search cost by exploring only a subset of candidate vectors while maintaining high search accuracy.
 
 ---
 
-## Algorithms
+# Evaluation Metric
 
-### 1. Brute Force (Exact Search)
+Search accuracy is measured using **Recall@k**
 
-Brute force computes the distance from the query to every vector in the dataset
-and returns the exact k nearest neighbors. It requires no index construction and
-achieves Recall@k = 1.0 by definition.
+\[
+\mathrm{Recall@k}=
+\frac{\left|\mathcal{R}\cap\tilde{\mathcal{R}}\right|}{k},
+\]
 
-| Metric | Complexity |
-|---|---|
-| Query time | $O(N \cdot d)$ |
-| Build time | $O(1)$ |
-| Memory | $O(N \cdot d)$ |
-| Recall@k | 1.0 (exact) |
+where
 
-Brute force serves as the upper bound on recall and the lower bound on QPS. We
-use FAISS `IndexFlatL2` as the implementation [3].
+- \(\mathcal{R}\) is the exact top-\(k\) result set.
+- \(\tilde{\mathcal{R}}\) is the approximate result set.
+
+The primary performance trade-off is between **Recall@k** and **Queries Per Second (QPS)**.
 
 ---
 
-### 2. HNSW — Hierarchical Navigable Small World
+# Algorithm Taxonomy
 
-HNSW [2] constructs a hierarchical multi-layer proximity graph. Upper layers
-contain long-range edges connecting a randomly selected subset of nodes for fast
-coarse navigation; lower layers contain short-range edges for precise local search.
-At query time, the algorithm performs a greedy descent from the top layer,
-narrowing the candidate set at each layer until convergence.
+Following Wang et al., ANN algorithms are grouped into four major families.
 
-HNSW is one of the most widely adopted graph-based ANN indexes because it provides an excellent trade-off between recall, search latency, and construction cost [1,2].
+| Family | Representative Algorithms |
+|---------|---------------------------|
+| Hash-based | LSH, E2LSH |
+| Tree-based | KD-Tree, FLANN, Annoy, MRPT |
+| Quantization-based | PQ, IVF-PQ, ScaNN |
+| Graph-based | NSW, HNSW, NSG, DiskANN |
 
-**Key parameters:**
-
-| Parameter | Role |
-|---|---|
-| `M` | Bidirectional links per node — controls graph connectivity |
-| `ef_construction` | Candidate list size during build — controls index quality |
-| `ef_search` | Candidate list size during query — controls the recall/QPS tradeoff |
-
-| Metric | Complexity |
-|---|---|
-| Query time | $O(\log N)$ |
-| Build time | $O(N \log N)$ |
-| Memory | $O(N \cdot M)$ |
-
-Standard HNSW treats all vectors as an undifferentiated graph with no notion of
-data partitioning or attribute-based routing, which limits interpretability and
-precludes efficient real-time insertion without index degradation.
+Graph-based methods currently represent the state of the art for high-dimensional vector search and are widely adopted in modern vector database systems.
 
 ---
 
-### 3. Hybrid Attribute-Spatial HNSW (Proposed Method)
+# Evaluated Algorithms
 
-The proposed **Hybrid Attribute-Spatial HNSW** index combines spatial partitioning with graph-based search to reduce the search space while preserving the high recall characteristics of HNSW. During index construction, the dataset is partitioned into **K** spatial clusters using k-means. Each cluster is represented by a centroid and maintains an independent HNSW index containing only the vectors assigned to that cluster.
+## 1. Brute Force (Exact Search)
 
-During query processing, the query vector is first compared with all cluster centroids. The **T** nearest clusters are selected, and their corresponding HNSW indexes are searched independently. The candidate results from the selected clusters are then merged and ranked to produce the final Top-*k* nearest neighbors.
+Brute Force performs exhaustive nearest-neighbor search by comparing every query vector against every vector in the dataset.
 
-#### Index Construction
+This implementation uses **FAISS IndexFlatL2**, which produces the exact nearest neighbors and serves as the ground-truth baseline for evaluating approximate indexing algorithms.
 
-The dataset is partitioned as
+### Characteristics
 
-$$
-\mathcal{X}
-\xrightarrow{\text{k-means}}
-\{C_0,C_1,\ldots,C_{K-1}\},
-$$
+| Property | Value |
+|----------|-------|
+| Search Type | Exact |
+| Distance Metric | Euclidean (L2) |
+| Query Complexity | \(O(Nd)\) |
+| Build Complexity | \(O(N)\) |
+| Memory | \(O(Nd)\) |
 
-where each cluster
+Brute Force provides the highest possible search accuracy but has the highest computational cost.
 
-$$
-C_i \rightarrow (\mu_i,\mathrm{HNSW}_i)
-$$
+---
 
-is represented by its centroid \(\mu_i\) and an independent HNSW index.
+## 2. FAISS-IVF (Inverted File Index)
 
-#### Query Processing
+FAISS-IVF partitions the dataset into \(K\) Voronoi cells using k-means clustering. During query processing, the query is compared with all centroids, the nearest **nprobe** clusters are selected, and vectors within those clusters are searched using exact Euclidean distance.
 
-For a query vector \(q\),
+### Main Parameters
 
-$$
+| Parameter | Description |
+|-----------|-------------|
+| nlist | Number of clusters |
+| nprobe | Number of clusters searched |
+
+### Complexity
+
+| Property | Complexity |
+|----------|------------|
+| Query | \(O(Kd+nprobe\cdot N/K)\) |
+| Build | Dominated by k-means clustering |
+| Memory | \(O(Nd)\) |
+
+FAISS-IVF serves as the primary partition-based baseline.
+
+---
+
+## 3. HNSW
+
+Hierarchical Navigable Small World (HNSW) constructs a hierarchical proximity graph for efficient approximate nearest-neighbor search.
+
+The search begins at the highest graph layer and greedily descends toward lower layers until the nearest neighbors are located.
+
+### Main Parameters
+
+| Parameter | Description |
+|-----------|-------------|
+| M | Maximum graph degree |
+| ef_construction | Construction search width |
+| ef_search | Query search width |
+
+### Complexity
+
+| Property | Complexity |
+|----------|------------|
+| Query | \(O(\log N)\) |
+| Build | \(O(N\log N)\) |
+| Memory | \(O(NM)\) |
+
+HNSW is the representative graph-based baseline used in this benchmark.
+
+---
+
+## 4. ScaNN
+
+ScaNN combines partitioning with anisotropic vector quantization to accelerate approximate nearest-neighbor search.
+
+It reduces both memory usage and search latency while maintaining high recall and is included as the representative quantization-based baseline.
+
+---
+
+## 5. Hybrid Attribute-Spatial HNSW (Proposed)
+
+The proposed Hybrid Attribute-Spatial HNSW index combines spatial partitioning with graph-based search.
+
+During index construction:
+
+- The dataset is partitioned into \(K\) clusters using k-means.
+- Each cluster stores its centroid.
+- Each cluster maintains an independent HNSW index.
+
+For a query:
+
+\[
 q
 \rightarrow
 \text{Centroid Search}
 \rightarrow
-\text{Top-}T\text{ Clusters}
+\text{Top-}T
 \rightarrow
 \text{Local HNSW Search}
 \rightarrow
-\text{Merge Candidates}
+\text{Merge}
 \rightarrow
-\text{Top-}k.
-$$
+\text{Top-}k
+\]
 
-The query first performs a linear scan over the **K** cluster centroids, followed by HNSW searches within the selected **T** clusters.
+Only the \(T\) nearest clusters are searched.
 
-#### Main Parameters
+### Main Parameters
 
 | Parameter | Description |
 |-----------|-------------|
-| `K` | Number of spatial clusters |
-| `T` | Number of clusters searched for each query |
-| `M` | Maximum graph degree of each local HNSW index |
-| `ef_construction` | HNSW construction parameter |
-| `ef_search` | HNSW search parameter |
+| K | Number of clusters |
+| T | Number of searched clusters |
+| M | HNSW graph degree |
+| ef_construction | Construction parameter |
+| ef_search | Query parameter |
 
-#### Complexity
+### Complexity
 
-| Metric | Complexity |
-|---------|------------|
-| Query time | $O(Kd + T\log(N/K))$ |
-| Build time | K-means clustering + local HNSW construction |
-| Memory | $O(NM)$ |
+| Property | Complexity |
+|----------|------------|
+| Query | \(O(Kd+T\log(N/K))\) |
+| Build | K-means + local HNSW construction |
+| Memory | \(O(NM)\) |
 
-where \(N\) is the number of vectors, \(d\) is the vector dimension, \(K\) is the number of clusters, and \(T\) is the number of clusters searched during query processing.
-
-Compared with a single global HNSW index, the proposed approach reduces the effective search space by restricting graph traversal to a subset of spatially relevant clusters. In addition, index maintenance is localized to individual clusters, allowing updates and rebuilding operations to be performed independently without reconstructing the entire index.
-
-
-### 4. FAISS-IVF — Inverted File Index
-
-FAISS-IVF [3] partitions the dataset into $K$ Voronoi cells using k-means. Each
-cell stores a posting list of its assigned vectors. At query time, the query is
-compared against all centroids and the `nprobe` closest cells are searched using
-exact flat L2 scan within each posting list.
-
-| Metric | Complexity |
-|---|---|
-| Query time | $O(K \cdot d + \text{nprobe} \cdot N/K)$ |
-| Build time | $O(N \cdot K)$ |
-| Memory | $O(N \cdot d)$ |
-
-FAISS-IVF is the closest prior system to our approach. The key distinction is that
-FAISS-IVF performs exact flat search within each cell, whereas our system replaces
-the flat posting list with a dedicated HNSW index per cluster — achieving higher
-QPS at comparable recall.
+Compared with a global HNSW index, this approach restricts graph traversal to spatially relevant partitions while preserving HNSW search efficiency.
 
 ---
 
-### 5. ScaNN — Scalable Nearest Neighbors
+# Evaluation Protocol
 
-ScaNN [4] combines two complementary techniques. Structured Orthogonal Random
-Projection (SOAR) partitions the space using overlapping trees, where each tree is
-optimized to cover the failure modes of the others. Anisotropic Vector Quantization
-(AVQ) compresses vectors by prioritizing accurate distance estimation for likely
-nearest neighbors, rather than minimizing average reconstruction error as standard
-product quantization does. ScaNN consistently achieves the highest QPS at high
-recall on ANN-Benchmarks and represents the strongest throughput competitor for
-any proposed ANN system.
+All algorithms are evaluated under identical experimental conditions.
 
+## Dataset
 
----
+- SIFT1M
+- Euclidean (L2) distance
 
-## Evaluation Protocol
+## Metrics
 
-We adopt the evaluation protocol and datasets of Aumüller et al. [6]. All
-algorithms are evaluated on the SIFT1M dataset (1M × 128-d, Euclidean distance).
-All baseline algorithms are rerun on our NVIDIA DGX Spark to ensure a consistent
-and fair comparison under identical hardware conditions.
+- Recall@1
+- Recall@k
+- Queries Per Second (QPS)
+- Average Query Latency
+- Index Construction Time
+- Search Time
+- Memory Consumption
+- Index Size
 
-| Metric | Definition | Formula |
-|---|---|---|
-| **Recall@k** | Fraction of true k-NNs returned | $\|\mathcal{R} \cap \tilde{\mathcal{R}}\| / k$ |
-| **QPS** | Queries processed per second | `num_queries / search_time` |
-| **Build time** | Time to construct the index | seconds |
-| **Index size** | Memory footprint of the index | MB |
+All baseline algorithms are executed on the same hardware platform to ensure fair and reproducible comparisons.
 
 ---
 
-## References
+# References
 
-[1] M. Wang, X. Xu, Q. Yue, Y. Wang: **A Comprehensive Survey and Experimental
-Comparison of Graph-Based Approximate Nearest Neighbor Search.**
-PVLDB 14(11): 1964–1978, 2021.
-[vldb.org/pvldb/vol14/p1964-wang.pdf](https://www.vldb.org/pvldb/vol14/p1964-wang.pdf)
-
-[2] Y. A. Malkov, D. A. Yashunin: **Efficient and Robust Approximate Nearest
-Neighbor Search Using Hierarchical Navigable Small World Graphs.**
-IEEE TPAMI 42(4): 824–836, 2020.
-[arXiv:1603.09320](https://arxiv.org/abs/1603.09320)
-
-[3] J. Johnson, M. Douze, H. Jégou: **Billion-Scale Similarity Search with GPUs.**
-IEEE Big Data 7(3): 535–547, 2021.
-[arXiv:1702.08734](https://arxiv.org/abs/1702.08734)
-
-[4] R. Guo et al.: **Accelerating Large-Scale Inference with Anisotropic Vector
-Quantization (ScaNN).** ICML 2020.
-[arXiv:1908.10396](https://arxiv.org/abs/1908.10396)
-
-[5] E. Bernhardsson: **Annoy: Approximate Nearest Neighbors in C++/Python.**
-[github.com/spotify/annoy](https://github.com/spotify/annoy)
-
-[6] M. Aumüller, E. Bernhardsson, A. Faithfull: **ANN-Benchmarks: A Benchmarking
-Tool for Approximate Nearest Neighbor Algorithms.**
-Information Systems 87, 2020.
-[DOI:10.1016/j.is.2019.02.006](https://doi.org/10.1016/j.is.2019.02.006)
+1. Wang et al. *A Comprehensive Survey and Experimental Comparison of Graph-Based Approximate Nearest Neighbor Search*. PVLDB, 2021.
+2. Malkov and Yashunin. *Efficient and Robust Approximate Nearest Neighbor Search Using Hierarchical Navigable Small World Graphs*. IEEE TPAMI, 2020.
+3. Johnson, Douze, and Jégou. *Billion-Scale Similarity Search with GPUs*. IEEE Transactions on Big Data, 2021.
+4. Guo et al. *Accelerating Large-Scale Inference with Anisotropic Vector Quantization*. ICML, 2020.
+5. Aumüller, Bernhardsson, and Faithfull. *ANN-Benchmarks: A Benchmarking Tool for Approximate Nearest Neighbor Algorithms*. Information Systems, 2020.
