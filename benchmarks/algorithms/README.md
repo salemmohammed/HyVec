@@ -6,23 +6,71 @@ The benchmark includes representative methods from the major ANN indexing famili
 
 ---
 
-# Problem Formulation
+# Nearest-Neighbor Search: Problem Formulation
 
-Given a dataset
+## 1. Setup
 
-\[
-\mathcal{X}=\{x_1,x_2,\ldots,x_N\}\subset\mathbb{R}^{d}
-\]
+Given a dataset of vectors
 
-and a query vector \(q\in\mathbb{R}^{d}\), the nearest-neighbor search problem is
+$$
+\mathcal{X} = \{x_1, x_2, \ldots, x_N\} \subset \mathbb{R}^{d}
+$$
 
-\[
-x^*=\arg\min_{x\in\mathcal{X}}\delta(x,q)
-\]
+and a query vector $q \in \mathbb{R}^{d}$, the **nearest-neighbor search (NNS)** problem asks us to find the point in $\mathcal{X}$ that is closest to $q$:
 
-where \(\delta(\cdot,\cdot)\) denotes the Euclidean (L2) distance.
+$$
+x^{*} = \arg\min_{x \in \mathcal{X}} \delta(x, q)
+$$
 
-Exact search examines every vector in the dataset and guarantees the correct nearest neighbors. Approximate Nearest Neighbor Search (ANNS) reduces the search cost by exploring only a subset of candidate vectors while maintaining high search accuracy.
+where $\delta(\cdot, \cdot)$ denotes the **Euclidean (L2) distance**:
+
+$$
+\delta(x, q) = \|x - q\|_2 = \sqrt{\sum_{i=1}^{d} (x_i - q_i)^2}
+$$
+
+| Symbol | Meaning |
+|---|---|
+| $\mathcal{X}$ | Dataset of $N$ vectors (e.g. embeddings) |
+| $d$ | Dimensionality of each vector |
+| $q$ | Query vector, same dimensionality as $x_i$ |
+| $\delta(x,q)$ | Euclidean distance between $x$ and $q$ |
+| $x^{*}$ | The true nearest neighbor of $q$ in $\mathcal{X}$ |
+
+The $\arg\min$ notation means: *return the vector $x$ that minimizes the distance*, not the minimum distance value itself.
+
+---
+
+## 2. Exact Search
+
+**Exact search** (brute force) computes $\delta(x_i, q)$ for **every** vector $x_i \in \mathcal{X}$, then selects the minimum.
+
+- ✅ **Guarantees correctness** — always returns the true nearest neighbor.
+- ❌ **Cost**: $O(N \cdot d)$ per query.
+- ❌ At scale ($N$ in the millions or billions, as with modern embedding datasets), this becomes computationally prohibitive for real-time use.
+
+---
+
+## 3. Approximate Nearest Neighbor Search (ANNS)
+
+**ANNS** relaxes the correctness guarantee in exchange for speed. Instead of scanning the whole dataset, it explores only a **subset of promising candidates**, using specialized index structures such as:
+
+- **Graph-based indexes** — e.g. HNSW
+- **Tree-based indexes** — e.g. KD-trees, ball trees
+- **Hashing-based indexes** — e.g. LSH
+- **Clustering/quantization-based indexes** — e.g. IVF, product quantization
+
+| | Exact Search | ANNS |
+|---|---|---|
+| Candidates examined | All $N$ vectors | Small subset |
+| Correctness | Guaranteed | High probability, not guaranteed |
+| Speed | Slow at scale — $O(N \cdot d)$ | Much faster (often orders of magnitude) |
+| Typical use case | Small datasets, offline batch jobs | Large-scale, real-time retrieval |
+
+---
+
+## 4. Why This Matters
+
+Systems like semantic search, recommendation engines, and **retrieval-augmented generation (RAG)** pipelines often need to search over millions or billions of embeddings *per query, in real time*. Exact search simply doesn't scale to this setting — which is why ANNS methods are the practical backbone of modern vector search infrastructure, trading a small, usually negligible loss in accuracy for the speed needed to make large-scale retrieval feasible.
 
 ---
 
