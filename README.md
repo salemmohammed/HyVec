@@ -8,14 +8,6 @@ An independent HNSW index [1] is then constructed for every final spatial cluste
 
 ---
 
-## Background
-
-The interactive visualization below provides a high-level overview of the complete vector search architecture. It illustrates how a query flows through the system, including query processing, cluster selection, similarity search, graph traversal, candidate refinement, reranking, and final result retrieval. The goal is to help readers understand how the different components interact to deliver efficient and scalable nearest-neighbor search.
-
-▶ Explore the System Pipeline: https://salemmohammed.github.io/my-vector-search
-
----
-
 ## Research Questions
 
 | # | Question | Theme |
@@ -25,7 +17,7 @@ The interactive visualization below provides a high-level overview of the comple
 | RQ3 | As new vectors are continuously inserted into HyVec, how quickly do Recall@1 and QPS degrade when the original cluster centroids are not updated? | **Online Insertion Without Re-Clustering** |
 | RQ4 | Can background re-clustering with atomic index swapping recover Recall@1 and QPS after online insertions while minimizing query interruption, and what is the maintenance overhead? | **Background Re-Clustering and Atomic Index Swapping** |
 | RQ5 | Does HyVec’s clustered search scale more efficiently than a standard unpartitioned HNSW index as dataset size increases? | **Scalability with Dataset Growth** |
-| RQ6 | Does attribute-based clustering improve the explainability of vector search by enabling query routing analysis, cluster-level performance diagnosis, and latency prediction? | **Understandability** |
+
 ---
 
 ## Partitioning Strategies
@@ -113,33 +105,6 @@ flowchart TD
 
 ---
 
-## Standard HNSW vs Clustered HNSW
-
-```mermaid
-flowchart LR
-    subgraph Standard["Standard HNSW"]
-        direction TB
-        Q1([Query]) --> I1[Traverse subset of 1M graph]
-        I1 --> R1([Result])
-    end
-
-    subgraph Clustered["Clustered HNSW (This Work)"]
-        direction TB
-        Q2([Query]) --> C1[Compare against K centroids]
-        C1 --> C2[Route to nearest cluster]
-        C2 --> C3[Search ~1,000 vectors only]
-        C3 --> R2([Result])
-    end
-
-    style Standard fill:#FEE2E2,stroke:#EF4444
-    style Clustered fill:#DCFCE7,stroke:#16A34A
-    style Q1 fill:#3B82F6,color:#fff
-    style Q2 fill:#3B82F6,color:#fff
-    style R1 fill:#16A34A,color:#fff
-    style R2 fill:#16A34A,color:#fff
-```
----
-
 ## Real-Time Insertion & Re-Clustering
 
 ```mermaid
@@ -183,20 +148,6 @@ sequenceDiagram
     IDX->>Q: Top-K approximate neighbors
     Note over Q: 1000× smaller search space
 ```
-
----
-
-## What Is a Vector / Embedding?
-
-An embedding converts complex data (images, text) into numbers so that similar things have similar numbers.
-
-```
-Cat photo    → [0.2, 0.8, 0.1, 0.9, ...]   ← similar!
-Another cat  → [0.2, 0.7, 0.1, 0.8, ...]   ← similar!
-Dog photo    → [0.9, 0.1, 0.7, 0.2, ...]   ← different
-```
-
-This project uses **SIFT descriptors** — 128-dimensional vectors describing visual patches of images.
 
 ---
 
@@ -246,48 +197,6 @@ Both are included as Git submodules pointing to author forks.
 
 ---
 
-## Repository Structure
-
-```text
-my-vector-search/
-├── benchmarks/                    # Benchmark algorithms, datasets, and results
-│   ├── algorithms/                # Brute-force and FAISS IVF baselines
-│   ├── data/                      # Dataset download scripts and ANN benchmark data
-│   ├── figures.html               # Benchmark visualization page
-│   ├── README.md                  # Benchmark documentation
-│   └── results.csv                # Benchmark results
-│
-├── docs/                          # GitHub Pages documentation
-│   ├── index.html                 # Interactive system pipeline visualization
-│   └── figures.html               # Project figures
-│
-├── experiments/                   # Main experimental evaluation
-│   ├── approach2_attribute/       # Attribute-clustered HNSW approach
-│   │   ├── build_indexes.cpp      # Builds one HNSW index per cluster
-│   │   ├── dynamic_reindex.cpp    # Real-time insertion and background re-clustering
-│   │   ├── generate_attributes.py # Generates cluster attributes
-│   │   ├── search.cpp             # Cluster-routed ANN search
-│   │   ├── benchmark.sh           # Benchmark script
-│   │   ├── run_all.sh             # Full experiment pipeline
-│   │   ├── README.md              # Approach documentation
-│   │   └── RESULTS.md             # Approach results summary
-│   │
-│   ├── baseline/                  # Standard HNSW baseline
-│   │   ├── sift1m_search.cpp      # Baseline search implementation
-│   │   └── sift -> ../sift        # Symlink to SIFT dataset
-│   │
-│   ├── dashboard.html             # Experiment dashboard
-│   └── README.md                  # Experiment documentation
-│
-├── hnswlib/                       # HNSW library fork/submodule
-├── index.html                     # Root interactive landing page
-├── figures.html                   # Root visualization page
-├── results.csv                    # Main result summary
-└── README.md
-```
-
----
-
 ## Approach: Attribute-Based Clustering (K=1000)
 
 ```
@@ -307,22 +216,6 @@ Step 4 (real-time):
         background thread re-clusters every N insertions
         atomic swap — search never stops
 ```
-
----
-
-## Baseline Experiment Setup
-
-| Metric | Value |
-|---|---|
-| Dataset | SIFT1M (1M × 128) |
-| Build time | TBD |
-| Recall@1 | TBD |
-| Search time | TBD |
-| QPS | TBD |
-| M | 16 |
-| ef_construction | 200 |
-| ef_search | 50 |
-| K results | 10 |
 
 ---
 
