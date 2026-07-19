@@ -31,3 +31,4 @@ experiments/*.tar.gz
 benchmarks/data/sift/
 benchmarks/data/*.hdf5
 benchmarks/data/*.hdf5
+data/*.hdf5
