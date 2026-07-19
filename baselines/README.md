@@ -1,10 +1,10 @@
 # Benchmarks
 
-This repository provides a benchmarking framework for evaluating **Approximate Nearest Neighbor (ANN)** indexing algorithms. It serves as a common experimental platform for comparing representative ANN methods under identical datasets, hardware configurations, and evaluation protocols.
+This repository provides a benchmarking framework for evaluating **baseline Approximate Nearest Neighbor (ANN)** indexing algorithms. It serves as a common experimental platform for comparing representative ANN methods under identical datasets, hardware configurations, and evaluation protocols.
 
-The primary objective of this benchmark is to evaluate the performance of our proposed **Hybrid Attribute-Spatial HNSW** index against established ANN techniques. All algorithms are executed using the same benchmark datasets and experimental settings to ensure fair, reproducible, and meaningful comparisons.
+**This repository currently contains only baseline ANN implementations.** Its primary purpose is to establish reference performance for widely used ANN indexing techniques. These baseline results will be used to evaluate our proposed **Hybrid Attribute-Spatial HNSW** index in future work. The proposed method is **not included in this folder**.
 
-Performance is evaluated using standard ANN metrics, including **Recall@k**, **Queries Per Second (QPS)**, **query latency**, **index construction time**, **search time**, **memory consumption**, and **index size**.
+All baseline algorithms are evaluated using the same datasets, hardware platform, and experimental settings to ensure fair, reproducible, and meaningful comparisons.
 
 ---
 
@@ -12,14 +12,14 @@ Performance is evaluated using standard ANN metrics, including **Recall@k**, **Q
 
 All benchmark experiments are conducted on the same hardware platform.
 
-| Component            | Specification               |
-| -------------------- | --------------------------- |
-| **System**           | NVIDIA DGX Spark            |
-| **Processor**        | NVIDIA GB10 Grace Blackwell |
-| **CPU**              | ARM Cortex @ 3.8 GHz        |
-| **Memory**           | 128 GB Unified Memory       |
-| **Storage**          | 4 TB NVMe SSD               |
-| **Operating System** | NVIDIA DGX OS               |
+| Component | Specification |
+|----------|---------------|
+| **System** | NVIDIA DGX Spark |
+| **Processor** | NVIDIA GB10 Grace Blackwell |
+| **CPU** | ARM Cortex @ 3.8 GHz |
+| **Memory** | 128 GB Unified Memory |
+| **Storage** | 4 TB NVMe SSD |
+| **Operating System** | NVIDIA DGX OS |
 
 ---
 
@@ -27,8 +27,8 @@ All benchmark experiments are conducted on the same hardware platform.
 
 The benchmarking framework currently supports the following datasets:
 
-* **SIFT1M** — Standard ANN benchmark dataset for evaluating conventional nearest neighbor search.
-* **Attributed Dataset** — Used to evaluate hybrid vector search with metadata filtering and attribute-aware retrieval.
+- **SIFT1M** — Standard ANN benchmark dataset for evaluating conventional nearest neighbor search.
+- **Attributed Dataset** — Used for evaluating hybrid vector search with metadata filtering and attribute-aware retrieval.
 
 ## Download SIFT1M
 
@@ -42,21 +42,17 @@ curl -L \
 
 ---
 
-# Supported ANN Algorithms
+# Baseline ANN Algorithms
 
-The benchmarking framework includes representative algorithms from the major ANN indexing families.
+The repository currently includes the following baseline ANN implementations.
 
-| Family                 | Representative Algorithms                |
-| ---------------------- | ---------------------------------------- |
-| **Exact Search**       | Brute Force                              |
-| **Hash-Based**         | Locality-Sensitive Hashing (LSH)         |
-| **Cluster-Based**      | IVF, IVFADC                              |
-| **Quantization-Based** | ScaNN                                    |
-| **Graph-Based**        | HNSW                                     |
-| **Disk-Based Graph**   | DiskANN                                  |
-| **Hybrid**             | Hybrid Attribute-Spatial HNSW (proposed) |
+| Family | Algorithm |
+|---------|-----------|
+| **Exact Search** | Brute Force |
+| **Cluster-Based** | FAISS-IVF |
+| **Graph-Based** | HNSW |
 
-Additional algorithms may be incorporated as the benchmarking framework evolves.
+Additional baseline algorithms (e.g., LSH, DiskANN, and ScaNN) may be incorporated as the benchmarking framework evolves.
 
 ---
 
@@ -64,13 +60,14 @@ Additional algorithms may be incorporated as the benchmarking framework evolves.
 
 All benchmark implementations are evaluated using a common set of performance metrics:
 
-* **Recall@k**
-* **Queries Per Second (QPS)**
-* **Average Query Latency**
-* **Index Construction Time**
-* **Search Time**
-* **Memory Consumption**
-* **Index Size**
+- **Recall@1**
+- **Recall@k**
+- **Queries Per Second (QPS)**
+- **Average Query Latency**
+- **Index Construction Time**
+- **Search Time**
+- **Memory Consumption**
+- **Index Size**
 
 ---
 
@@ -79,7 +76,7 @@ All benchmark implementations are evaluated using a common set of performance me
 All commands assume the current working directory is
 
 ```bash
-cd benchmarks/algorithms
+cd baselines
 ```
 
 ## Brute Force
@@ -104,7 +101,7 @@ $(pkg-config --cflags --libs hdf5) \
 
 ---
 
-## Baseline HNSW
+## HNSW
 
 ### Build
 
@@ -149,43 +146,23 @@ The implementation automatically evaluates multiple **nprobe** values (`1`, `5`,
 
 ---
 
-## Hybrid Attribute-Spatial HNSW
-
-### Build
-
-```bash
-g++ -O3 -std=c++17 clustered_hnsw.cpp -o clustered_hnsw \
--I../../hnswlib \
-$(pkg-config --cflags --libs hdf5)
-```
-
-### Run
-
-```bash
-./clustered_hnsw \
-    --dataset ../data/sift-128-euclidean.hdf5 \
-    --k 10
-```
-
----
-
 # Output
 
 Each benchmark records the following performance statistics:
 
-* Recall@1
-* Recall@k
-* Queries Per Second (QPS)
-* Average Query Latency
-* Index Construction Time
-* Search Time
-* Memory Consumption
-* Index Size
+- Recall@1
+- Recall@k
+- Queries Per Second (QPS)
+- Average Query Latency
+- Index Construction Time
+- Search Time
+- Memory Consumption
+- Index Size
 
-Benchmark results are automatically appended to:
+Benchmark results are automatically appended to
 
 ```text
 results/results.csv
 ```
 
-The generated results can be used to produce Recall–QPS, Recall–Latency, and other comparative performance plots.
+The generated results can be used to produce Recall–QPS, Recall–Latency, Recall–Memory, and other comparative performance plots.
