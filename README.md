@@ -1,4 +1,4 @@
-# HyVec: An Online Hybrid Vector Search Engine for Approximate Nearest Neighbor Search
+# HyVec: Online Graph Maintenance for Efficient Hybrid Search
 
 ## Clustered Attribute-Based Vector Search
 
