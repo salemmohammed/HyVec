@@ -8,9 +8,7 @@ Detailed guide for running all experiments in this project.
 
 ```
 experiments/
-├── baseline/
-│   └── sift1m_search.cpp          ← Step 0: standard HNSW (no clustering)
-└── approach2_attribute/
+└── approach_attribute/
     ├── generate_attributes.py     ← Step 1: cluster vectors into attributes
     ├── build_indexes.cpp          ← Step 2: build one HNSW index per cluster
     ├── search.cpp                 ← Step 3: sweep TOP_CLUSTERS values
@@ -56,25 +54,6 @@ cd experiments/approach2_attribute
 ```
 
 Or run each step individually below.
-
----
-
-## Step 0: Baseline (Standard HNSW)
-
-No clustering. Searches all 1M vectors. Reference point.
-
-```bash
-cd experiments/baseline
-g++ -O3 -std=c++17 sift1m_search.cpp -o sift1m_search -I../../hnswlib
-./sift1m_search
-```
-
-Expected output (results pending experiments on NVIDIA DGX Spark):
-```
-Build time: xxx s
-Recall@1:   xxx
-QPS:        xxx
-```
 
 ---
 
@@ -254,25 +233,22 @@ Exact tradeoff to be confirmed by experiments.
 
 ## File Descriptions
 
-### `baseline/sift1m_search.cpp`
-Standard HNSW on all 1M vectors. No clustering. The reference point.
-Functions: `read_fvecs()`, `read_ivecs()`, `main()`.
 
-### `approach2_attribute/generate_attributes.py`
+### `approach_attribute/generate_attributes.py`
 Runs MiniBatchKMeans. Saves cluster labels and centroids.
 Functions: `read_fvecs()`, `main()`.
 
-### `approach2_attribute/build_indexes.cpp`
+### `approach_attribute/build_indexes.cpp`
 Reads labels. Builds one HierarchicalNSW per cluster. Saves to disk.
 Functions: `read_fvecs()`, `read_npy_labels()`, `main()`.
 
-### `approach2_attribute/search.cpp`
+### `approach_attribute/search.cpp`
 Loads all indexes. Sweeps TOP_CLUSTERS = {1, 3, 5, 10, 20, 50}.
 Reports Recall@1 and QPS per setting.
 Functions: `read_fvecs()`, `read_ivecs()`, `read_npy_centroids()`,
 `find_nearest_centroids()`, `main()`.
 
-### `approach2_attribute/dynamic_reindex.cpp`
+### `approach_attribute/dynamic_reindex.cpp`
 Real-time insertion + background re-clustering with atomic swap.
 Classes: `DynamicClusteredIndex`.
 Methods: `insert()`, `search()`, `recluster_thread()`, `load_initial()`.

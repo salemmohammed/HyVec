@@ -1,9 +1,7 @@
-# Approach 2: Clustered Attributed Vector Search
+# Clustered Attributed Vector Search
 
-This folder contains the full implementation of our Clustered HNSW system —
-the main contribution of the paper. It is organized as a four-step pipeline
-that partitions a vector dataset into clusters, builds one HNSW index per
-cluster, searches across clusters, and supports real-time insertions with
+This folder contains the full implementation of our Clustered atrributed system. It is organized as a four-step pipeline
+that partitions a vector dataset into clusters, builds index in each cluster, searches across clusters, and supports real-time insertions with
 background re-clustering.
 
 ---
@@ -373,26 +371,3 @@ g++ -O3 -std=c++17 dynamic_reindex.cpp -o dynamic_reindex \
 | Clusters rebuilt | xxx |
 | Search downtime | 0s (atomic swap) |
 
----
-
-## References
-
-[1] Y. A. Malkov, D. A. Yashunin: **Efficient and Robust Approximate Nearest
-Neighbor Search Using Hierarchical Navigable Small World Graphs.**
-IEEE TPAMI, 42(4): 824–836, 2020. arXiv:1603.09320
-→ hnswlib — `HierarchicalNSW` used in Steps 2, 3, 4
-
-[2] H. Jégou, M. Douze, C. Schmid: **Product Quantization for Nearest Neighbor
-Search.** IEEE TPAMI, 33(1): 117–128, 2011.
-→ SIFT1M dataset and .fvecs/.ivecs binary format
-
-[3] M. Aumüller, E. Bernhardsson, A. Faithfull: **ANN-Benchmarks: A Benchmarking
-Tool for Approximate Nearest Neighbor Algorithms.**
-Information Systems, 87, 2020. DOI: 10.1016/j.is.2019.02.006
-→ Evaluation protocol and Recall@k definition
-
-[4] D. Sculley: **Web-Scale K-Means Clustering.** WWW, 2010.
-→ MiniBatchKMeans — the clustering algorithm used in Step 1
-
-[5] S. P. Lloyd: **Least Squares Quantization in PCM.** IEEE TIT, 28(2), 1982.
-→ Lloyd's algorithm — the theoretical basis of k-means
