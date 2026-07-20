@@ -474,7 +474,7 @@ for nthreads in args.nthreads:
             print()
             print(f"--- {index_name} ---")
 
-            nlist = n_iter = nprobe = np.NaN
+            nlist = n_iter = nprobe = np.nan
             
             index = faiss.index_factory(d, "Flat")
             start_add = time.perf_counter()

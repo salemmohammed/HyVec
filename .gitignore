@@ -34,3 +34,4 @@ benchmarks/data/*.hdf5
 data/*.hdf5
 third_party/crack-ivf/others/AVtree/datasets/
 third_party/crack-ivf/main_code/results/
+data/bigann/

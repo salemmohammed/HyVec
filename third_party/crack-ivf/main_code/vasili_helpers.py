@@ -610,9 +610,9 @@ def load_dataset(dbname="SIFT1M"):
         # big-ann sift1b, which is sliced 1m, 10m, 100m etc
         dbsize = int(dbname[4:-1])  # SIFT1M to SIFT1000M
 
-        xb = mmap_bvecs(os.path.join(f"/pub/scratch/{username}/datasets/bigann", 'bigann_base.bvecs'))
-        xq = mmap_bvecs(os.path.join(f"/pub/scratch/{username}/datasets/bigann", 'bigann_query.bvecs'))
-        gt = ivecs_read(os.path.join(f"/pub/scratch/{username}/datasets/bigann", 'gnd/idx_%dM.ivecs' % dbsize))
+        xb = mmap_bvecs(os.path.join(f"/home/salemmohammed/Projects/research-projects/HyVec/data/bigann", 'bigann_base.bvecs'))
+        xq = mmap_bvecs(os.path.join(f"/home/salemmohammed/Projects/research-projects/HyVec/data/bigann", 'bigann_query.bvecs'))
+        gt = ivecs_read(os.path.join(f"/home/salemmohammed/Projects/research-projects/HyVec/data/bigann", 'gnd/idx_%dM.ivecs' % dbsize))
 
         # trim xb to correct size
         xb = xb[:dbsize * 1000 * 1000]
