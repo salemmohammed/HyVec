@@ -1,3 +1,6 @@
+## Baselines
+See `third_party/crack-ivf/SETUP.md` for how the Crack-IVF baseline was set up on ARM/aarch64.
+
 # crack-ivf-vldb
 
 # setup enviroment
