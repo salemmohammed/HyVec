@@ -6,6 +6,8 @@ import time
 import random
 import sys
 import os 
+import requests
+from tqdm import tqdm
 from typing import Tuple
 import h5py
 import matplotlib.pyplot as plt
@@ -669,7 +671,7 @@ def get_dataset_fn_ann_benchmarks(dataset_name: str) -> str:
     Returns:
         str: The full file path of the dataset.
     """
-    BASE_DATA_FOLDER=f'/pub/scratch/{username}/vdb-project-data'
+    BASE_DATA_FOLDER=f'/home/salemmohammed/Projects/research-projects/HyVec/data/ann_benchmarks'
     if not os.path.exists(f"{BASE_DATA_FOLDER}/data/datasets"):
         os.mkdir(f"{BASE_DATA_FOLDER}/data/datasets")
     return os.path.join(f"{BASE_DATA_FOLDER}/data/datasets", f"{dataset_name}.hdf5")
