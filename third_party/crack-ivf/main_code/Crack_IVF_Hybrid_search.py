@@ -38,11 +38,11 @@ def main():
     # Assign ONE attribute to every query
     attributes_queries = np.random.randint(0, 3, size=len(xq)).tolist()
 
-    print("Database attributes:")
-    print(attributes_dataset)
+    # print("Database attributes:")
+    # print(attributes_dataset)
 
-    print("\nQuery attributes:")
-    print(attributes_queries)
+    # print("\nQuery attributes:")
+    # print(attributes_queries)
 
     # ------------------------------------------------------------------
     # Search using vector + attribute predicate
@@ -53,14 +53,16 @@ def main():
         k=10
     )
 
-    print("\nDistances:")
-    print(D)
+    # print("\nDistances:")
+    # print(D)
 
-    print("\nIndices:")
-    print(I)
+    # print("\nIndices:")
+    # print(I)
 
-    # Print attributes of returned neighbors
-    print("\nReturned attributes:")
+    # # Print attributes of returned neighbors
+    # print("\nReturned attributes:")
+    
+    
     # for qid in range(len(xq)):
     #     print(f"\nQuery {qid} (attribute={attributes_queries[qid]}):")
     #     for rank, idx in enumerate(I[qid]):

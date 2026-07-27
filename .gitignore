@@ -30,10 +30,10 @@ experiments/sift.tar.gz
 experiments/*.tar.gz
 benchmarks/data/sift/
 benchmarks/data/*.hdf5
-benchmarks/data/*.hdf5
 data/*.hdf5
 third_party/crack-ivf/others/AVtree/datasets/
 third_party/crack-ivf/main_code/results/
 data/bigann/
 data/ann_benchmarks/
 results/logs/
+data/hnsw*
