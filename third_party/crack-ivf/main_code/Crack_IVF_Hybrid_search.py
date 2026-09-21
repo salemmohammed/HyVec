@@ -21,7 +21,7 @@ def main():
 
     # Build the index
     index.add(xb)
-
+    
     # ------------------------------------------------------------------
     # Assign ONE attribute to every database vector.
     # Attribute values are integers in [0, 4].

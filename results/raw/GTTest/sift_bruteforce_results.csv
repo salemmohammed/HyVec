@@ -1,0 +1,2 @@
+Method,Dataset,Recall@K,K,Total Time (s),Average Latency (ms),QPS,Average Matching Vectors,Average Selectivity (%)
+Filtered Brute Force,SIFT1M,1.0,1000,156.949706512969,15.694970651296897,63.71467791928419,83337.6289,8.333762890000001
