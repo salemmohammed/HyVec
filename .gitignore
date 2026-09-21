@@ -37,3 +37,4 @@ data/bigann/
 data/ann_benchmarks/
 results/logs/
 data/hnsw*
+results/raw/GTTest/*.npz
